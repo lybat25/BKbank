@@ -503,9 +503,10 @@
     let users = {};
     let currentUser = null;
     let bktokBalances = {};
+    let bktokOrders = { buy: [], sell: [] };
+    let frozenBalances = {};
     let allSupportChats = {};
     let privateChats = {};
-    let bktokOrders = { buy: [], sell: [] };
     let bktokTrades = [];
     let userTasks = {};
     let isStackExpanded = false;
@@ -525,8 +526,10 @@
             if (mutation.type === 'characterData' || mutation.type === 'childList') {
                 const el = mutation.target;
                 if (el.id === 'token-balance-display' && currentUser) {
-                    const realBalance = bktokBalances[currentUser]?.toFixed(2) || '0';
-                    if (el.textContent !== realBalance + ' BK') el.textContent = realBalance + ' BK';
+                    const total = (bktokBalances[currentUser] || 0).toFixed(2);
+                    const frozen = (frozenBalances[currentUser] || 0).toFixed(2);
+                    const available = getAvailableBalance(currentUser).toFixed(2);
+                    el.innerHTML = `${total} BK<br><small style="font-size: 0.7rem; opacity: 0.7;">🔒 Заморожено: ${frozen} BK | ✅ Доступно: ${available} BK</small>`;
                 }
                 if (el.id === 'header-username' && currentUser) {
                     const realName = users[currentUser]?.name || currentUser;
@@ -602,6 +605,26 @@
         return true;
     }
     
+    function freezeBalance(user, amount) {
+        if (!currentUser || user !== currentUser) return false;
+        const available = (bktokBalances[user] || 0) - (frozenBalances[user] || 0);
+        if (available < amount) return false;
+        frozenBalances[user] = (frozenBalances[user] || 0) + amount;
+        if (MASTER_KEY) secureSetItem('frozenBalances', frozenBalances);
+        return true;
+    }
+    
+    function unfreezeBalance(user, amount) {
+        if (!currentUser) return false;
+        frozenBalances[user] = Math.max(0, (frozenBalances[user] || 0) - amount);
+        if (MASTER_KEY) secureSetItem('frozenBalances', frozenBalances);
+        return true;
+    }
+    
+    function getAvailableBalance(user) {
+        return (bktokBalances[user] || 0) - (frozenBalances[user] || 0);
+    }
+    
     function loadUnencryptedData() {
         failedAttempts = parseInt(realGetItem('failedAttempts') || '0');
         lockUntil = parseInt(realGetItem('lockUntil') || '0');
@@ -674,6 +697,7 @@
                     users = decryptedUsers;
                     currentUser = sessionData.username;
                     bktokBalances = secureGetItem('bktokBalances') || {};
+                    frozenBalances = secureGetItem('frozenBalances') || {};
                     allSupportChats = secureGetItem('allSupportChats') || {};
                     privateChats = secureGetItem('privateChats') || {};
                     bktokOrders = secureGetItem('bktokOrders') || { buy: [], sell: [] };
@@ -773,6 +797,7 @@
         if (!constantTimeCompare(users[username].passwordHash, hashPassword(password))) { alert('Неверный пароль'); MASTER_KEY = null; return; }
         currentUser = username;
         bktokBalances = secureGetItem('bktokBalances') || {};
+        frozenBalances = secureGetItem('frozenBalances') || {};
         allSupportChats = secureGetItem('allSupportChats') || {};
         privateChats = secureGetItem('privateChats') || {};
         bktokOrders = secureGetItem('bktokOrders') || { buy: [], sell: [] };
@@ -881,6 +906,7 @@
         secureSetItem('bankUsers', users);
         currentUser = username;
         bktokBalances = secureGetItem('bktokBalances') || {};
+        frozenBalances = secureGetItem('frozenBalances') || {};
         bktokBalances[username] = 100;
         secureSetItem('bktokBalances', bktokBalances);
         allSupportChats = {}; privateChats = {}; bktokOrders = { buy: [], sell: [] }; bktokTrades = []; userTasks = {};
@@ -939,6 +965,7 @@
         realSetItem('failedAttempts', '0'); realSetItem('lockUntil', '0'); realSetItem('blockLevel', '0'); 
         currentUser = f;
         bktokBalances = secureGetItem('bktokBalances') || {};
+        frozenBalances = secureGetItem('frozenBalances') || {};
         allSupportChats = secureGetItem('allSupportChats') || {};
         privateChats = secureGetItem('privateChats') || {};
         bktokOrders = secureGetItem('bktokOrders') || { buy: [], sell: [] };
@@ -1053,8 +1080,19 @@
     }
 
     function startChartUpdates() { if (chartInterval) clearInterval(chartInterval); chartInterval = setInterval(() => { if (currentUser && !document.getElementById('bktok-section')?.classList.contains('hidden')) renderChart(); }, 1000); }
-    function loadBKtok() { if (!currentUser) return; if (bktokBalances[currentUser]===undefined) { bktokBalances[currentUser] = 100; if (MASTER_KEY) secureSetItem('bktokBalances', bktokBalances); } document.getElementById('token-balance-display').textContent = bktokBalances[currentUser].toFixed(2) + ' BK'; updateOrderBook(); renderChart(); renderTradeHistory(); }
+    
+    function loadBKtok() { 
+        if (!currentUser) return; 
+        if (bktokBalances[currentUser]===undefined) { bktokBalances[currentUser] = 100; if (MASTER_KEY) secureSetItem('bktokBalances', bktokBalances); }
+        const total = (bktokBalances[currentUser] || 0).toFixed(2);
+        const frozen = (frozenBalances[currentUser] || 0).toFixed(2);
+        const available = getAvailableBalance(currentUser).toFixed(2);
+        document.getElementById('token-balance-display').innerHTML = `${total} BK<br><small style="font-size: 0.7rem; opacity: 0.7;">🔒 Заморожено: ${frozen} BK | ✅ Доступно: ${available} BK</small>`;
+        updateOrderBook(); renderChart(); renderTradeHistory(); 
+    }
+    
     function changeChartPeriod(p) { chartPeriod = p; document.querySelectorAll('.chart-period').forEach(b => b.classList.remove('active')); event.target.classList.add('active'); renderChart(); }
+    
     function renderChart() {
         const container = document.getElementById('chart-bars'); if (!container) return;
         let trades = [...bktokTrades].reverse(); const periodMs = { '1H': 3600000, '6H': 21600000, '24H': 86400000, '1W': 604800000 };
@@ -1068,6 +1106,7 @@
         document.getElementById('chart-open').textContent = first.toFixed(2); document.getElementById('chart-high').textContent = max.toFixed(2); document.getElementById('chart-low').textContent = min.toFixed(2);
         const ce = document.getElementById('chart-change'); ce.textContent = (change>=0?'+':'') + percent + '%'; ce.className = 'chart-stat-value ' + (change>=0?'positive':'negative');
     }
+    
     function updateOrderBook() {
         let buyHtml = '', sellHtml = ''; const buyOrders = [...bktokOrders.buy].sort((a,b)=>b.price-a.price), sellOrders = [...bktokOrders.sell].sort((a,b)=>a.price-b.price);
         buyOrders.slice(0,8).forEach(o => buyHtml += `<div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid rgba(255,255,255,0.05);"><span>${o.amount.toFixed(2)} BK</span><span style="color:#4ade80;">${o.price.toFixed(2)} ₽</span></div>`);
@@ -1076,10 +1115,133 @@
         const myOrders = [...bktokOrders.buy, ...bktokOrders.sell].filter(o=>o.user===currentUser);
         document.getElementById('my-orders').innerHTML = myOrders.length ? myOrders.map(o => `<div style="display:flex; justify-content:space-between; padding:8px; background:rgba(255,215,0,0.05); margin-bottom:5px; border-radius:8px;"><span>${o.side==='buy'?'🟢 Покупка':'🔴 Продажа'} ${o.amount} BK @ ${o.price} ₽</span><button onclick="cancelOrder('${o.id}')" style="background:transparent; border:none; color:#ff5e5e; cursor:pointer;">✕</button></div>`).join('') : '<p style="color:#888;">Нет активных ордеров</p>';
     }
+    
     function renderTradeHistory() { const c = document.getElementById('trade-history'); if (!c) return; const userTrades = bktokTrades.filter(t=>t.buyer===currentUser||t.seller===currentUser).slice(-10).reverse(); c.innerHTML = userTrades.length ? userTrades.map(t => `<div style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.05);"><span style="color:${t.buyer===currentUser?'#4ade80':'#ff5e5e'};">${t.buyer===currentUser?'Покупка':'Продажа'}</span> ${t.amount} BK @ ${t.price} ₽ <small>${new Date(t.time).toLocaleTimeString()}</small></div>`).join('') : '<p style="color:#888;">Нет сделок</p>'; }
-    function createOrder(side) { const price = parseFloat(document.getElementById('order-price').value), amount = parseFloat(document.getElementById('order-amount').value); if (!price||!amount||price<=0||amount<=0) return; const fee = amount * price * 0.001; if (side==='buy' && bktokBalances[currentUser] < amount*price + fee) return alert('Недостаточно средств'); if (side==='sell' && bktokBalances[currentUser] < amount) return alert('Недостаточно BK'); const order = { id: Date.now()+Math.random(), user: currentUser, side, price, amount }; bktokOrders[side].push(order); if (side==='buy') updateBalance(currentUser, -(amount*price + fee), 'trade'); else updateBalance(currentUser, -amount, 'trade'); matchOrders(); if (MASTER_KEY) secureSetItem('bktokOrders', bktokOrders); loadBKtok(); }
-    function cancelOrder(id) { let order = bktokOrders.buy.find(o=>o.id==id) || bktokOrders.sell.find(o=>o.id==id); if (!order) return; if (order.side==='buy') updateBalance(currentUser, order.amount * order.price, 'refund'); else updateBalance(currentUser, order.amount, 'refund'); bktokOrders.buy = bktokOrders.buy.filter(o=>o.id!=id); bktokOrders.sell = bktokOrders.sell.filter(o=>o.id!=id); if (MASTER_KEY) secureSetItem('bktokOrders', bktokOrders); loadBKtok(); }
-    function matchOrders() { bktokOrders.buy.sort((a,b)=>b.price-a.price); bktokOrders.sell.sort((a,b)=>a.price-b.price); for (let buy of bktokOrders.buy) { for (let sell of bktokOrders.sell) { if (buy.price >= sell.price && buy.user !== sell.user) { const amt = Math.min(buy.amount, sell.amount), pr = sell.price, fee = amt * pr * 0.001; updateBalance(buy.user, amt, 'trade'); updateBalance(sell.user, amt*pr - fee, 'trade'); bktokTrades.push({ buyer: buy.user, seller: sell.user, amount: amt, price: pr, time: new Date().toISOString() }); buy.amount -= amt; sell.amount -= amt; if (buy.amount <= 0.0001) bktokOrders.buy = bktokOrders.buy.filter(o=>o.id!==buy.id); if (sell.amount <= 0.0001) bktokOrders.sell = bktokOrders.sell.filter(o=>o.id!==sell.id); if (MASTER_KEY) secureSetItem('bktokTrades', bktokTrades); break; } } } bktokOrders.buy = bktokOrders.buy.filter(o=>o.amount>0.0001); bktokOrders.sell = bktokOrders.sell.filter(o=>o.amount>0.0001); }
+    
+    function createOrder(side) {
+        const price = parseFloat(document.getElementById('order-price').value);
+        const amount = parseFloat(document.getElementById('order-amount').value);
+        
+        if (!price || !amount || price <= 0 || amount <= 0) {
+            alert('Введите корректные цену и количество');
+            return;
+        }
+        
+        const fee = amount * price * 0.001;
+        const totalCost = amount * price + fee;
+        const available = getAvailableBalance(currentUser);
+        
+        if (side === 'buy') {
+            if (available < totalCost) {
+                alert(`Недостаточно средств. Доступно: ${available.toFixed(2)} RUB`);
+                return;
+            }
+            if (!freezeBalance(currentUser, totalCost)) {
+                alert('Ошибка заморозки средств');
+                return;
+            }
+        } else {
+            if (available < amount) {
+                alert(`Недостаточно BK. Доступно: ${available.toFixed(2)} BK`);
+                return;
+            }
+            if (!freezeBalance(currentUser, amount)) {
+                alert('Ошибка заморозки средств');
+                return;
+            }
+        }
+        
+        const order = { 
+            id: crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).substr(2, 9), 
+            user: currentUser, 
+            side, 
+            price, 
+            amount,
+            created: Date.now()
+        };
+        
+        bktokOrders[side].push(order);
+        if (MASTER_KEY) secureSetItem('bktokOrders', bktokOrders);
+        
+        matchOrders();
+        loadBKtok();
+    }
+    
+    function cancelOrder(id) {
+        let order = bktokOrders.buy.find(o => o.id == id) || bktokOrders.sell.find(o => o.id == id);
+        if (!order || order.user !== currentUser) {
+            alert('Ордер не найден или не ваш');
+            return;
+        }
+        
+        if (order.side === 'buy') {
+            const totalCost = order.amount * order.price * 1.001;
+            unfreezeBalance(currentUser, totalCost);
+        } else {
+            unfreezeBalance(currentUser, order.amount);
+        }
+        
+        bktokOrders.buy = bktokOrders.buy.filter(o => o.id != id);
+        bktokOrders.sell = bktokOrders.sell.filter(o => o.id != id);
+        
+        if (MASTER_KEY) secureSetItem('bktokOrders', bktokOrders);
+        loadBKtok();
+        showToast('✅ Ордер отменен, средства разморожены', 'success');
+    }
+    
+    function matchOrders() {
+        bktokOrders.buy.sort((a, b) => b.price - a.price || a.created - b.created);
+        bktokOrders.sell.sort((a, b) => a.price - b.price || a.created - b.created);
+        
+        let trades = [];
+        
+        for (let buy of bktokOrders.buy) {
+            for (let sell of bktokOrders.sell) {
+                if (buy.price >= sell.price && buy.user !== sell.user) {
+                    const amount = Math.min(buy.amount, sell.amount);
+                    const price = sell.price;
+                    const fee = amount * price * 0.001;
+                    
+                    unfreezeBalance(buy.user, amount * price + fee);
+                    bktokBalances[buy.user] = (bktokBalances[buy.user] || 0) - (amount * price + fee);
+                    bktokBalances[buy.user] = (bktokBalances[buy.user] || 0) + amount;
+                    
+                    unfreezeBalance(sell.user, amount);
+                    bktokBalances[sell.user] = (bktokBalances[sell.user] || 0) - amount;
+                    bktokBalances[sell.user] = (bktokBalances[sell.user] || 0) + (amount * price - fee);
+                    
+                    trades.push({
+                        id: crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+                        buyer: buy.user,
+                        seller: sell.user,
+                        amount: amount,
+                        price: price,
+                        fee: fee,
+                        time: new Date().toISOString()
+                    });
+                    
+                    buy.amount -= amount;
+                    sell.amount -= amount;
+                    
+                    if (buy.amount <= 0.0001) break;
+                }
+            }
+        }
+        
+        bktokOrders.buy = bktokOrders.buy.filter(o => o.amount > 0.0001);
+        bktokOrders.sell = bktokOrders.sell.filter(o => o.amount > 0.0001);
+        
+        if (trades.length > 0) {
+            bktokTrades.push(...trades);
+            if (MASTER_KEY) {
+                secureSetItem('bktokTrades', bktokTrades);
+                secureSetItem('bktokBalances', bktokBalances);
+                secureSetItem('frozenBalances', frozenBalances);
+            }
+        }
+        
+        if (MASTER_KEY) secureSetItem('bktokOrders', bktokOrders);
+    }
 
     const tasks = [{id:'daily',name:'Ежедневный вход',reward:10,cooldown:86400000},{id:'profile',name:'Заполнить профиль',reward:50,once:true},{id:'avatar',name:'Установить аватар',reward:30,once:true},{id:'trade',name:'Совершить сделку',reward:20,cooldown:3600000}];
     function renderTasks() { if (!currentUser) return; if (!userTasks[currentUser]) userTasks[currentUser] = {}; const c = document.getElementById('tasks-container'); c.innerHTML = tasks.map(t => { const comp = userTasks[currentUser][t.id], can = !comp || (t.cooldown && Date.now()-comp > t.cooldown); return `<div class="task-item ${!can?'completed':''}" onclick="${can?`completeTask('${t.id}')`:''}"><strong>${escapeHtml(t.name)}</strong><div style="color:#FFD700; margin-top:8px;">+${t.reward} BK</div></div>`; }).join(''); }
@@ -1087,13 +1249,43 @@
 
     const cases = [{name:'Обычный',price:50,rewards:[5,10,20,30,50,100]},{name:'Редкий',price:200,rewards:[50,100,150,250,500,1000]},{name:'Легендарный',price:1000,rewards:[200,500,1000,2000,5000,10000]}];
     function renderCases() { if (!currentUser) return; const c = document.getElementById('cases-container'); c.innerHTML = cases.map(cs => `<div class="case-item" onclick="openCase('${cs.name}',${cs.price},[${cs.rewards}])"><h4>${escapeHtml(cs.name)}</h4><div style="color:#FFD700; margin-top:10px;">${cs.price} BK</div></div>`).join(''); }
-    function openCase(n,p,r) { if (bktokBalances[currentUser] < p) return alert('Недостаточно BK!'); updateBalance(currentUser, -p, 'case'); const w = r[Math.floor(Math.random()*r.length)]; updateBalance(currentUser, w, 'case_win'); showWelcomeMessage(`Выигрыш: ${w} BK!`); renderCases(); }
+    function openCase(n,p,r) { if (getAvailableBalance(currentUser) < p) return alert('Недостаточно BK!'); updateBalance(currentUser, -p, 'case'); const w = r[Math.floor(Math.random()*r.length)]; updateBalance(currentUser, w, 'case_win'); showWelcomeMessage(`Выигрыш: ${w} BK!`); renderCases(); }
 
     function renderPrivateChats() { const c = document.getElementById('chats-container'), my = Object.keys(privateChats).filter(id => id.includes(currentUser)); let h = `<div class="support-panel"><div class="users-list"><h4>Чаты</h4><button class="gold-button" onclick="startNewChat()" style="margin-bottom:10px;">+ Новый</button>`; my.forEach(id => { const o = id.split('-').find(u => u!==currentUser); h += `<div class="user-item" onclick="openPrivateChat('${id}')"><strong>${escapeHtml(o)}</strong></div>`; }); h += `</div><div class="chat-area">`; if (selectedPrivateChat) { const o = selectedPrivateChat.split('-').find(u => u!==currentUser); h += `<h4>Чат с ${escapeHtml(o)}</h4><div class="chat-messages" id="private-chat-messages"></div><div class="chat-input-area"><input id="private-chat-input" class="chat-input" placeholder="Сообщение..."><button class="chat-send-btn" onclick="sendPrivateMessage()">Отправить</button></div>`; } else h += `<p>Выберите чат</p>`; h += `</div></div>`; c.innerHTML = h; if (selectedPrivateChat) loadPrivateChatMessages(); }
     function loadPrivateChatMessages() { const cont = document.getElementById('private-chat-messages'); if (!cont) return; cont.innerHTML = (privateChats[selectedPrivateChat]||[]).map(msg => `<div class="chat-message ${msg.from===currentUser?'client':'support'}"><strong>${escapeHtml(msg.from)}:</strong><br>${escapeHtml(msg.text)}<small>${new Date(msg.time).toLocaleTimeString().slice(0,5)}</small></div>`).join(''); cont.scrollTop = cont.scrollHeight; }
     function startNewChat() { const u = prompt('Никнейм:'); if (!u||!users[u]) return alert('Не найден'); if (u===currentUser) return alert('Нельзя'); const id = [currentUser,u].sort().join('-'); if (!privateChats[id]) privateChats[id]=[]; if (MASTER_KEY) secureSetItem('privateChats', privateChats); selectedPrivateChat=id; renderPrivateChats(); }
     function openPrivateChat(id) { selectedPrivateChat=id; renderPrivateChats(); }
     function sendPrivateMessage() { const inp = document.getElementById('private-chat-input'), txt = inp.value.trim(); if (!txt||!selectedPrivateChat) return; if (!privateChats[selectedPrivateChat]) privateChats[selectedPrivateChat]=[]; privateChats[selectedPrivateChat].push({from:currentUser,text:txt,time:new Date().toISOString()}); if (MASTER_KEY) secureSetItem('privateChats', privateChats); inp.value=''; loadPrivateChatMessages(); }
+
+    function clearAllMyOrders() {
+        if (!currentUser) return;
+        if (!confirm('⚠️ Отменить ВСЕ ваши активные ордера и вернуть замороженные средства?')) return;
+        
+        const myBuyOrders = bktokOrders.buy.filter(o => o.user === currentUser);
+        const mySellOrders = bktokOrders.sell.filter(o => o.user === currentUser);
+        
+        myBuyOrders.forEach(o => {
+            const totalCost = o.amount * o.price * 1.001;
+            unfreezeBalance(currentUser, totalCost);
+        });
+        
+        mySellOrders.forEach(o => {
+            unfreezeBalance(currentUser, o.amount);
+        });
+        
+        bktokOrders.buy = bktokOrders.buy.filter(o => o.user !== currentUser);
+        bktokOrders.sell = bktokOrders.sell.filter(o => o.user !== currentUser);
+        
+        if (MASTER_KEY) {
+            secureSetItem('bktokOrders', bktokOrders);
+            secureSetItem('frozenBalances', frozenBalances);
+        }
+        
+        showToast('✅ Все ордера отменены, средства разморожены', 'success');
+        if (document.getElementById('bktok-section') && !document.getElementById('bktok-section').classList.contains('hidden')) {
+            loadBKtok();
+        }
+    }
 
     function showProfile() {
         if (!currentUser) return; const u = users[currentUser], c = document.getElementById('profile-section');
@@ -1125,6 +1317,7 @@
             <button class="profile-action-btn" onclick="showEditProfileForm()">✏️ Редактировать профиль</button>
             <button class="profile-action-btn" onclick="showBackupModal()">💾 Управление бэкапами</button>
             <button class="profile-action-btn" onclick="destroyAccount()">⚠️ Удалить аккаунт</button>
+            <button class="profile-action-btn" onclick="clearAllMyOrders()" style="color: #ff5e5e;">🔄 Сбросить все мои ордера</button>
         </div>
         <div class="profile-info"><p style="font-size:1rem;">📧 ${escapeHtml(u.email||'Не указан')}</p><p style="font-size:1rem;">📱 ${escapeHtml(u.phone||'Не указан')}</p><p style="font-size:1rem;" class="sensitive-data">💰 ${bktokBalances[currentUser]||0} BK</p></div>`;
         c.classList.remove('hidden');
@@ -1143,6 +1336,7 @@
         users[username].isLoggedIn = true;
         secureSetItem('bankUsers', users);
         bktokBalances = secureGetItem('bktokBalances') || {};
+        frozenBalances = secureGetItem('frozenBalances') || {};
         allSupportChats = secureGetItem('allSupportChats') || {};
         privateChats = secureGetItem('privateChats') || {};
         bktokOrders = secureGetItem('bktokOrders') || { buy: [], sell: [] };
@@ -1529,6 +1723,7 @@
     window.downloadBackupFile = downloadBackupFile;
     window.restoreFromStorage = restoreFromStorage;
     window.showBackupModal = showBackupModal;
+    window.clearAllMyOrders = clearAllMyOrders;
     
 })();
 </script>
