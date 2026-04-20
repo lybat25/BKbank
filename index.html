@@ -346,10 +346,10 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                     <h3 style="margin:0;">📈 График BK / RUB</h3>
                     <div class="chart-controls">
-                        <button class="chart-period active" onclick="window.changeChartPeriod('1H')">1Ч</button>
-                        <button class="chart-period" onclick="window.changeChartPeriod('6H')">6Ч</button>
-                        <button class="chart-period" onclick="window.changeChartPeriod('24H')">24Ч</button>
-                        <button class="chart-period" onclick="window.changeChartPeriod('1W')">1Н</button>
+                        <button class="chart-period active" onclick="window.changeChartPeriod('1H', event)">1Ч</button>
+                        <button class="chart-period" onclick="window.changeChartPeriod('6H', event)">6Ч</button>
+                        <button class="chart-period" onclick="window.changeChartPeriod('24H', event)">24Ч</button>
+                        <button class="chart-period" onclick="window.changeChartPeriod('1W', event)">1Н</button>
                     </div>
                 </div>
                 <div class="chart-bars" id="chart-bars"></div>
@@ -471,11 +471,6 @@
     const SALT = "BK_BANK_STATIC_SALT_2024";
     
     function getUserSalt(username) { return CryptoJS.SHA256(username + BASE_SALT).toString(); }
-    function getDifficulty(username, failedAttempts) { 
-        const base = 50000; 
-        const multiplier = Math.min(Math.pow(2, failedAttempts), 8); 
-        return base * multiplier; 
-    }
     
     function secureSetItem(key, value) {
         if (!MASTER_KEY) return;
@@ -681,6 +676,13 @@
         }
     }
 
+    function saveSession() {
+        if (currentUser && MASTER_KEY) {
+            realSetItem('currentSession', JSON.stringify({username: currentUser, timestamp: Date.now()}));
+            sessionStorage.setItem('MASTER_KEY', MASTER_KEY);
+        }
+    }
+
     window.onload = async () => { 
         if (realGetItem('theme') === 'light') document.body.classList.add('light-theme');
         const savedSession = realGetItem('currentSession');
@@ -689,6 +691,8 @@
             try {
                 const sessionData = JSON.parse(savedSession);
                 MASTER_KEY = savedMasterKey;
+                sessionStorage.setItem('MASTER_KEY', MASTER_KEY); // КРИТИЧЕСКИ ВАЖНО
+                
                 const decryptedUsers = secureGetItem('bankUsers');
                 if (decryptedUsers && decryptedUsers[sessionData.username]) {
                     users = decryptedUsers;
@@ -704,7 +708,11 @@
                     updateUIForAuth();
                     return;
                 }
-            } catch(e) {}
+            } catch(e) {
+                console.error('Ошибка восстановления сессии:', e);
+                MASTER_KEY = null;
+                sessionStorage.removeItem('MASTER_KEY');
+            }
         }
         showMainContent();
         updateUIForAuth();
@@ -800,8 +808,7 @@
         bktokTrades = secureGetItem('bktokTrades') || [];
         userTasks = secureGetItem('userTasks') || {};
         if (bktokBalances[username] === undefined) { bktokBalances[username] = 100; secureSetItem('bktokBalances', bktokBalances); }
-        realSetItem('currentSession', JSON.stringify({username, timestamp: Date.now()}));
-        sessionStorage.setItem('MASTER_KEY', MASTER_KEY);
+        saveSession();
         removeModals(); document.getElementById('modal-overlay')?.remove();
         showMainContent(); showWelcomeMessage(users[username].name); updateUIForAuth();
     }
@@ -895,7 +902,20 @@
         const salt = getUserSalt(username);
         MASTER_KEY = CryptoJS.PBKDF2(password, salt, { keySize: 256 / 32, iterations: 100000, hasher: CryptoJS.algo.SHA256 }).toString();
         const existingUsers = secureGetItem('bankUsers') || {};
-        if (existingUsers[username]) { MASTER_KEY = null; return showError(e,'Этот никнейм уже занят'); }
+        if (existingUsers[username]) { 
+            MASTER_KEY = null; 
+            return showError(e,'Этот никнейм уже занят'); 
+        }
+        
+        // Дополнительная проверка — ищем по phone и email
+        const userExists = Object.values(existingUsers).some(u => 
+            (u.phone && u.phone === phone) || (u.email && u.email === email)
+        );
+        if (userExists) {
+            MASTER_KEY = null;
+            return showError(e, 'Пользователь с таким телефоном или email уже существует');
+        }
+        
         users = existingUsers;
         users[username] = { name, email, phone, passwordHash: hashPassword(password), balance: 0, registrationDate: new Date().toISOString(), avatar: null };
         secureSetItem('bankUsers', users);
@@ -907,8 +927,7 @@
         allSupportChats = {}; privateChats = {}; bktokOrders = { buy: [], sell: [] }; bktokTrades = []; userTasks = {};
         savedAccounts[username] = true;
         realSetItem('savedAccounts', JSON.stringify(savedAccounts));
-        realSetItem('currentSession', JSON.stringify({username, timestamp: Date.now()}));
-        sessionStorage.setItem('MASTER_KEY', MASTER_KEY);
+        saveSession();
         removeModals(); document.getElementById('modal-overlay')?.remove();
         showMainContent(); showWelcomeMessage(name); updateUIForAuth();
     }
@@ -936,8 +955,6 @@
             showPoWOverlay(); 
             await proofOfWork(p, u); 
             hidePoWOverlay();
-        } else {
-            console.log('⏩ Пропуск PoW для существующего пользователя');
         }
         const salt = getUserSalt(u);
         MASTER_KEY = CryptoJS.PBKDF2(p, salt, { keySize: 256 / 32, iterations: 100000, hasher: CryptoJS.algo.SHA256 }).toString();
@@ -968,8 +985,7 @@
         savedAccounts[f] = true;
         realSetItem('savedAccounts', JSON.stringify(savedAccounts));
         if (bktokBalances[f] === undefined) { bktokBalances[f] = 100; secureSetItem('bktokBalances', bktokBalances); }
-        realSetItem('currentSession', JSON.stringify({username: f, timestamp: Date.now()}));
-        sessionStorage.setItem('MASTER_KEY', MASTER_KEY);
+        saveSession();
         removeModals(); document.getElementById('modal-overlay')?.remove();
         showMainContent(); showWelcomeMessage(users[f].name); updateUIForAuth();
     }
@@ -981,7 +997,6 @@
         if (!currentUser && (s==='profile'||s==='chats'||s==='bktok'||s==='tasks'||s==='cases')) { showLoginForm(); return; }
         ['about','services','cards','bktok','tasks','cases','support','chats','profile','public-profile'].forEach(id => document.getElementById(id+'-section')?.classList.add('hidden'));
         
-        // Останавливаем обновление графика при уходе с биржи
         if (s !== 'bktok') {
             if (chartInterval) {
                 clearInterval(chartInterval);
@@ -1093,7 +1108,7 @@
             if (currentUser && !document.getElementById('bktok-section')?.classList.contains('hidden')) {
                 renderChart(); 
             }
-        }, 3000); // Увеличил интервал до 3 секунд для снижения нагрузки
+        }, 3000);
     }
     
     function updateBalanceDisplay() {
@@ -1108,10 +1123,6 @@
                 <small style="font-size: 0.7rem; opacity: 0.7;">
                     🔒 Заморожено: ${frozenBK} BK | ✅ Доступно: ${availableBK} BK
                 </small>
-                <br>
-                <small style="font-size: 0.8rem; color: #4ade80;">
-                    💵 RUB доступно: ${availableBK} ₽
-                </small>
             `;
         }
     }
@@ -1125,10 +1136,10 @@
         renderTradeHistory(); 
     }
     
-    function changeChartPeriod(p) { 
+    function changeChartPeriod(p, ev) { 
         chartPeriod = p; 
         document.querySelectorAll('.chart-period').forEach(b => b.classList.remove('active')); 
-        event.target.classList.add('active'); 
+        if (ev && ev.target) ev.target.classList.add('active');
         renderChart(); 
     }
     
@@ -1215,7 +1226,7 @@
         
         if (side === 'buy') {
             if (available < totalCost) {
-                alert(`Недостаточно средств. Доступно: ${available.toFixed(2)} RUB`);
+                alert(`Недостаточно средств для покупки. Доступно: ${available.toFixed(2)} (BK/RUB)`);
                 return;
             }
             if (!freezeBalance(currentUser, totalCost)) {
@@ -1257,8 +1268,9 @@
         }
         
         if (order.side === 'buy') {
-            const totalCost = order.amount * order.price * 1.001;
-            unfreezeBalance(currentUser, totalCost);
+            const fee = order.amount * order.price * 0.001;
+            const totalCost = order.amount * order.price + fee;
+            unfreezeBalance(currentUser, Math.round(totalCost * 100) / 100);
         } else {
             unfreezeBalance(currentUser, order.amount);
         }
@@ -1284,14 +1296,12 @@
                     const price = sell.price;
                     const fee = amount * price * 0.001;
                     
-                    // Проверка реальных средств у покупателя
                     if ((bktokBalances[buy.user] || 0) < amount * price + fee) {
-                        console.error('🚨 КРИТИЧЕСКАЯ ОШИБКА: Недостаточно RUB у покупателя', buy.user);
+                        console.error('🚨 КРИТИЧЕСКАЯ ОШИБКА: Недостаточно средств у покупателя', buy.user);
                         unfreezeBalance(buy.user, amount * price + fee);
                         continue;
                     }
                     
-                    // Проверка реальных средств у продавца
                     if ((bktokBalances[sell.user] || 0) < amount) {
                         console.error('🚨 КРИТИЧЕСКАЯ ОШИБКА: Недостаточно BK у продавца', sell.user);
                         unfreezeBalance(sell.user, amount);
@@ -1357,8 +1367,14 @@
         if (!currentUser) return;
         bktokBalances[currentUser] = (bktokBalances[currentUser] || 0) + 10000;
         if (MASTER_KEY) secureSetItem('bktokBalances', bktokBalances);
-        showToast('✅ Баланс пополнен на 10 000 ₽ (тестовый режим)', 'success');
-        if (!document.getElementById('bktok-section').classList.contains('hidden')) loadBKtok();
+        showToast('✅ Баланс пополнен на 10 000 (тестовый режим)', 'success');
+        
+        if (!document.getElementById('bktok-section').classList.contains('hidden')) {
+            loadBKtok();
+        }
+        if (!document.getElementById('profile-section').classList.contains('hidden')) {
+            showProfile();
+        }
     }
 
     function clearAllMyOrders() {
@@ -1369,8 +1385,9 @@
         const mySellOrders = bktokOrders.sell.filter(o => o.user === currentUser);
         
         myBuyOrders.forEach(o => {
-            const totalCost = o.amount * o.price * 1.001;
-            unfreezeBalance(currentUser, totalCost);
+            const fee = o.amount * o.price * 0.001;
+            const totalCost = o.amount * o.price + fee;
+            unfreezeBalance(currentUser, Math.round(totalCost * 100) / 100);
         });
         
         mySellOrders.forEach(o => {
@@ -1420,7 +1437,7 @@
         <div class="profile-actions">
             <button class="profile-action-btn" onclick="showEditProfileForm()">✏️ Редактировать профиль</button>
             <button class="profile-action-btn" onclick="showBackupModal()">💾 Управление бэкапами</button>
-            <button class="profile-action-btn" onclick="depositTestRubles()" style="color: #4ade80;">💰 Пополнить тестовые 10 000 ₽</button>
+            <button class="profile-action-btn" onclick="depositTestRubles()" style="color: #4ade80;">💰 Пополнить тестовые 10 000 BK</button>
             <button class="profile-action-btn" onclick="clearAllMyOrders()" style="color: #ff5e5e;">🔄 Сбросить все мои ордера</button>
             <button class="profile-action-btn" onclick="destroyAccount()">⚠️ Удалить аккаунт</button>
         </div>
@@ -1447,8 +1464,7 @@
         bktokOrders = secureGetItem('bktokOrders') || { buy: [], sell: [] };
         bktokTrades = secureGetItem('bktokTrades') || [];
         userTasks = secureGetItem('userTasks') || {};
-        realSetItem('currentSession', JSON.stringify({username, timestamp: Date.now()}));
-        sessionStorage.setItem('MASTER_KEY', MASTER_KEY);
+        saveSession();
         updateUIForAuth(); showProfile();
         showWelcomeMessage(`Переключено на ${users[username].name}`);
     }
@@ -1758,7 +1774,6 @@
         }
     }
     
-    // Заглушка WebSocket для будущего бэкенда
     let ws = null;
     function connectToMarketStream() {
         console.log('📡 [ЗАГЛУШКА] Подключение к потоку ордеров...');
@@ -1775,6 +1790,7 @@
     logout = async function() { 
         if (currentUser) await autoBackup('logout'); 
         if (ws) { ws.close(); ws = null; }
+        if (chartInterval) clearInterval(chartInterval);
         return originalLogout(); 
     };
     
@@ -1814,7 +1830,7 @@
     style.textContent = `@keyframes slideIn { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } } @keyframes slideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(50px); } }`;
     document.head.appendChild(style);
     
-    console.log('✅ BK-Bank v2.1 с исправлением зависания биржи загружен!');
+    console.log('✅ BK-Bank v2.3 — Сессия сохраняется, все баги исправлены!');
     
     window.toggleTheme = toggleTheme;
     window.toggleSection = toggleSection;
