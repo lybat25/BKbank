@@ -487,10 +487,14 @@
     // Шифрованное сохранение
     function secureSetItem(key, value) {
         if (!MASTER_KEY) return;
-        const data = JSON.stringify(value);
-        const encrypted = CryptoJS.AES.encrypt(data, MASTER_KEY).toString();
-        const hmac = CryptoJS.HmacSHA256(encrypted, MASTER_KEY).toString();
-        realSetItem(key, JSON.stringify({ encrypted, hmac }));
+        try {
+            const data = JSON.stringify(value);
+            const encrypted = CryptoJS.AES.encrypt(data, MASTER_KEY).toString();
+            const hmac = CryptoJS.HmacSHA256(encrypted, MASTER_KEY).toString();
+            realSetItem(key, JSON.stringify({ encrypted, hmac }));
+        } catch(e) {
+            console.error('Ошибка шифрования:', e);
+        }
     }
     
     // Шифрованная загрузка
@@ -508,6 +512,7 @@
             const decrypted = CryptoJS.AES.decrypt(encrypted, MASTER_KEY).toString(CryptoJS.enc.Utf8);
             return JSON.parse(decrypted);
         } catch(e) {
+            console.error('Ошибка расшифровки:', e);
             return null;
         }
     }
@@ -733,11 +738,13 @@
     
     function saveSession() {
         if (currentUser && MASTER_KEY) {
-            realSetItem('currentSession', JSON.stringify({
+            const sessionData = {
                 username: currentUser,
                 timestamp: Date.now()
-            }));
+            };
+            realSetItem('currentSession', JSON.stringify(sessionData));
             sessionStorage.setItem('MASTER_KEY', MASTER_KEY);
+            console.log('✅ Сессия сохранена для', currentUser);
         }
     }
     
@@ -1669,7 +1676,7 @@
         privateChats = secureGetItem('privateChats') || {};
         bktokOrders = secureGetItem('bktokOrders') || { buy: [], sell: [] };
         bktokTrades = secureGetItem('bktokTrades') || [];
-        userTasks = secureGetItem('userTasks') || [];
+        userTasks = secureGetItem('userTasks') || {};
         
         savedAccounts[foundUser] = true;
         realSetItem('savedAccounts', JSON.stringify(savedAccounts));
@@ -1895,10 +1902,14 @@
         const savedSession = realGetItem('currentSession');
         const savedMasterKey = sessionStorage.getItem('MASTER_KEY');
         
+        console.log('🔄 Попытка восстановления сессии...');
+        
         if (savedSession && savedMasterKey) {
             try {
                 const sessionData = JSON.parse(savedSession);
                 MASTER_KEY = savedMasterKey;
+                
+                console.log('🔑 MASTER_KEY загружен из sessionStorage');
                 
                 const decryptedUsers = secureGetItem('bankUsers');
                 if (decryptedUsers && decryptedUsers[sessionData.username]) {
@@ -1910,17 +1921,23 @@
                     privateChats = secureGetItem('privateChats') || {};
                     bktokOrders = secureGetItem('bktokOrders') || { buy: [], sell: [] };
                     bktokTrades = secureGetItem('bktokTrades') || [];
-                    userTasks = secureGetItem('userTasks') || [];
+                    userTasks = secureGetItem('userTasks') || {};
                     
+                    console.log('✅ Сессия успешно восстановлена для', currentUser);
                     showMainContent();
                     updateUIForAuth();
                     return;
+                } else {
+                    console.warn('⚠️ Не удалось расшифровать данные пользователя');
                 }
             } catch(e) {
-                console.error('Ошибка восстановления сессии:', e);
+                console.error('❌ Ошибка восстановления сессии:', e);
                 MASTER_KEY = null;
                 sessionStorage.removeItem('MASTER_KEY');
+                realRemoveItem('currentSession');
             }
+        } else {
+            console.log('ℹ️ Нет сохраненной сессии');
         }
         
         showMainContent();
@@ -1958,7 +1975,7 @@
     window.clearAllMyOrders = clearAllMyOrders;
     window.depositTestRubles = depositTestRubles;
     
-    console.log('✅ BK-Bank v2.5 — Начальный баланс 10 BK, все баги исправлены!');
+    console.log('✅ BK-Bank v2.6 — Сессия сохраняется, начальный баланс 10 BK');
     
 })();
 </script>
