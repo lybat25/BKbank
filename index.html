@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -888,7 +887,7 @@
         if (!currentUser) return;
         
         if (bktokBalances[currentUser] === undefined) {
-            bktokBalances[currentUser] = 100;
+            bktokBalances[currentUser] = 10; // НАЧАЛЬНЫЙ БАЛАНС 10 BK
             if (MASTER_KEY) secureSetItem('bktokBalances', bktokBalances);
         }
         
@@ -1180,9 +1179,9 @@
     }
     
     const cases = [
-        { name: 'Обычный', price: 50, rewards: [5, 10, 20, 30, 50, 100] },
-        { name: 'Редкий', price: 200, rewards: [50, 100, 150, 250, 500, 1000] },
-        { name: 'Легендарный', price: 1000, rewards: [200, 500, 1000, 2000, 5000, 10000] }
+        { name: 'Обычный', price: 5, rewards: [1, 2, 3, 5, 8, 10] },
+        { name: 'Редкий', price: 20, rewards: [5, 10, 15, 25, 50, 100] },
+        { name: 'Легендарный', price: 100, rewards: [20, 50, 100, 200, 500, 1000] }
     ];
     
     function renderCases() {
@@ -1413,7 +1412,7 @@
             </div>
             <div class="profile-actions">
                 <button class="profile-action-btn" onclick="showEditProfileForm()">✏️ Редактировать профиль</button>
-                <button class="profile-action-btn" onclick="depositTestRubles()" style="color: #4ade80;">💰 Пополнить тестовые 10 000 BK</button>
+                <button class="profile-action-btn" onclick="depositTestRubles()" style="color: #4ade80;">💰 Пополнить тестовые 1 000 BK</button>
                 <button class="profile-action-btn" onclick="clearAllMyOrders()" style="color: #ff5e5e;">🔄 Сбросить все мои ордера</button>
                 <button class="profile-action-btn" onclick="destroyAccount()">⚠️ Удалить аккаунт</button>
             </div>
@@ -1485,9 +1484,9 @@
     
     function depositTestRubles() {
         if (!currentUser) return;
-        bktokBalances[currentUser] = (bktokBalances[currentUser] || 0) + 10000;
+        bktokBalances[currentUser] = (bktokBalances[currentUser] || 0) + 1000;
         if (MASTER_KEY) secureSetItem('bktokBalances', bktokBalances);
-        showToast('✅ Баланс пополнен на 10 000 BK', 'success');
+        showToast('✅ Баланс пополнен на 1 000 BK', 'success');
         showProfile();
     }
     
@@ -1670,13 +1669,13 @@
         privateChats = secureGetItem('privateChats') || {};
         bktokOrders = secureGetItem('bktokOrders') || { buy: [], sell: [] };
         bktokTrades = secureGetItem('bktokTrades') || [];
-        userTasks = secureGetItem('userTasks') || {};
+        userTasks = secureGetItem('userTasks') || [];
         
         savedAccounts[foundUser] = true;
         realSetItem('savedAccounts', JSON.stringify(savedAccounts));
         
         if (bktokBalances[foundUser] === undefined) {
-            bktokBalances[foundUser] = 100;
+            bktokBalances[foundUser] = 10; // НАЧАЛЬНЫЙ БАЛАНС 10 BK
             secureSetItem('bktokBalances', bktokBalances);
         }
         
@@ -1843,7 +1842,7 @@
         
         bktokBalances = secureGetItem('bktokBalances') || {};
         frozenBalances = secureGetItem('frozenBalances') || {};
-        bktokBalances[username] = 100;
+        bktokBalances[username] = 10; // НАЧАЛЬНЫЙ БАЛАНС 10 BK
         secureSetItem('bktokBalances', bktokBalances);
         
         allSupportChats = {};
@@ -1911,7 +1910,7 @@
                     privateChats = secureGetItem('privateChats') || {};
                     bktokOrders = secureGetItem('bktokOrders') || { buy: [], sell: [] };
                     bktokTrades = secureGetItem('bktokTrades') || [];
-                    userTasks = secureGetItem('userTasks') || {};
+                    userTasks = secureGetItem('userTasks') || [];
                     
                     showMainContent();
                     updateUIForAuth();
@@ -1959,7 +1958,7 @@
     window.clearAllMyOrders = clearAllMyOrders;
     window.depositTestRubles = depositTestRubles;
     
-    console.log('✅ BK-Bank v2.4 — Все баги исправлены!');
+    console.log('✅ BK-Bank v2.5 — Начальный баланс 10 BK, все баги исправлены!');
     
 })();
 </script>
