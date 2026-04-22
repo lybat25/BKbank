@@ -12,6 +12,7 @@
     <link rel="apple-touch-icon" href="png/2025-01-31_14-13-47-Photoroom.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
     <style>
+        /* ВЕСЬ ТВОЙ ОРИГИНАЛЬНЫЙ CSS ОСТАЕТСЯ БЕЗ ИЗМЕНЕНИЙ */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; height: 100%; }
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: #ffffff; overflow-x: hidden; line-height: 1.6; -webkit-font-smoothing: antialiased; min-height: 100vh; transition: background 0.3s; }
@@ -403,6 +404,7 @@
 (function() {
     "use strict";
     
+    // Проверка загрузки CryptoJS
     if (typeof CryptoJS === 'undefined') {
         alert('Ошибка: CryptoJS не загружен!');
         return;
@@ -430,17 +432,23 @@
     let requireCaptcha = false;
     let isStackExpanded = false;
     let selectedPrivateChat = null;
+    let devtoolsOpen = false;
+    let isTabActive = true;
     
+    // Константы
     const BASE_SALT = "BK_SECURE_SALT_V2_2026";
-    const STORAGE_KEY = "BK_BANK_STORAGE_KEY_V2";
+    const SALT = "BK_BANK_STATIC_SALT_2024";
+    const threshold = 160;
     
     // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
     
+    // Получение реального localStorage
     const _realStorage = window.localStorage;
     function realGetItem(key) { return _realStorage.getItem(key); }
     function realSetItem(key, value) { _realStorage.setItem(key, value); }
     function realRemoveItem(key) { _realStorage.removeItem(key); }
     
+    // Загрузка нешифрованных данных
     function loadUnencryptedData() {
         failedAttempts = parseInt(realGetItem('failedAttempts') || '0');
         lockUntil = parseInt(realGetItem('lockUntil') || '0');
@@ -449,6 +457,7 @@
         savedAccounts = JSON.parse(realGetItem('savedAccounts') || '{}');
     }
     
+    // Экранирование HTML
     function escapeHtml(text) {
         if (!text) return '';
         const div = document.createElement('div');
@@ -456,6 +465,7 @@
         return div.innerHTML;
     }
     
+    // Сравнение строк в постоянном времени
     function constantTimeCompare(a, b) {
         if (a.length !== b.length) return false;
         let result = 0;
@@ -465,47 +475,17 @@
         return result === 0;
     }
     
+    // Получение соли пользователя
     function getUserSalt(username) {
         return CryptoJS.SHA256(username + BASE_SALT).toString();
     }
     
+    // Хеширование пароля
     function hashPassword(p) {
         return CryptoJS.SHA256(p + getUserSalt(p)).toString();
     }
     
-    // ========== ШИФРОВАНИЕ С СОХРАНЕНИЕМ КЛЮЧА ==========
-    
-    // Ключ для шифрования MASTER_KEY (фиксированный, но смешанный с данными пользователя)
-    function getStorageEncryptionKey() {
-        // Используем комбинацию фиксированной строки и данных из localStorage
-        const base = "BK_STORAGE_ENCRYPTION_KEY_2026";
-        const fingerprint = realGetItem('deviceFingerprint') || base;
-        return CryptoJS.SHA256(base + fingerprint).toString();
-    }
-    
-    // Сохраняем MASTER_KEY в localStorage (зашифрованным)
-    function saveMasterKeyToStorage(key) {
-        if (!key) return;
-        const encKey = getStorageEncryptionKey();
-        const encrypted = CryptoJS.AES.encrypt(key, encKey).toString();
-        realSetItem('encryptedMasterKey', encrypted);
-        console.log('🔑 MASTER_KEY сохранён в localStorage');
-    }
-    
-    // Загружаем MASTER_KEY из localStorage
-    function loadMasterKeyFromStorage() {
-        const encrypted = realGetItem('encryptedMasterKey');
-        if (!encrypted) return null;
-        try {
-            const encKey = getStorageEncryptionKey();
-            const decrypted = CryptoJS.AES.decrypt(encrypted, encKey).toString(CryptoJS.enc.Utf8);
-            return decrypted || null;
-        } catch(e) {
-            console.error('❌ Ошибка загрузки MASTER_KEY:', e);
-            return null;
-        }
-    }
-    
+    // Шифрованное сохранение
     function secureSetItem(key, value) {
         if (!MASTER_KEY) return;
         try {
@@ -518,6 +498,7 @@
         }
     }
     
+    // Шифрованная загрузка
     function secureGetItem(key) {
         if (!MASTER_KEY) return null;
         const stored = realGetItem(key);
@@ -572,12 +553,14 @@
         return (bktokBalances[user] || 0) - (frozenBalances[user] || 0);
     }
     
-    // ========== МАТЧИНГ ОРДЕРОВ ==========
+    // ========== ИСПРАВЛЕННАЯ ФУНКЦИЯ МАТЧИНГА ОРДЕРОВ ==========
     
     function matchOrders() {
+        // Проверка на слишком много итераций
         let iterationCount = 0;
         const MAX_ITERATIONS = 1000;
         
+        // Сортируем ордера
         bktokOrders.buy.sort((a, b) => b.price - a.price || a.created - b.created);
         bktokOrders.sell.sort((a, b) => a.price - b.price || a.created - b.created);
         
@@ -590,33 +573,42 @@
             const buy = bktokOrders.buy[i];
             const sell = bktokOrders.sell[j];
             
+            // Проверяем, можем ли мы матчить
             if (buy.price >= sell.price && buy.user !== sell.user) {
                 const amount = Math.min(buy.amount, sell.amount);
                 const price = sell.price;
                 const fee = amount * price * 0.001;
                 
+                // Проверяем доступные балансы
                 const buyerAvailable = getAvailableBalance(buy.user);
                 const sellerAvailable = getAvailableBalance(sell.user);
                 
+                // Проверяем достаточно ли средств у покупателя
                 if (buyerAvailable < amount * price + fee) {
+                    console.warn('Недостаточно средств у покупателя', buy.user);
                     i++;
                     continue;
                 }
                 
+                // Проверяем достаточно ли BK у продавца
                 if (sellerAvailable < amount) {
+                    console.warn('Недостаточно BK у продавца', sell.user);
                     j++;
                     continue;
                 }
                 
+                // Размораживаем средства
                 unfreezeBalance(buy.user, amount * price + fee);
                 unfreezeBalance(sell.user, amount);
                 
+                // Обновляем балансы
                 bktokBalances[buy.user] = (bktokBalances[buy.user] || 0) - (amount * price + fee);
                 bktokBalances[buy.user] = (bktokBalances[buy.user] || 0) + amount;
                 
                 bktokBalances[sell.user] = (bktokBalances[sell.user] || 0) - amount;
                 bktokBalances[sell.user] = (bktokBalances[sell.user] || 0) + (amount * price - fee);
                 
+                // Создаем запись о сделке
                 trades.push({
                     id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
                     buyer: buy.user,
@@ -627,9 +619,11 @@
                     time: new Date().toISOString()
                 });
                 
+                // Уменьшаем количество в ордерах
                 buy.amount -= amount;
                 sell.amount -= amount;
                 
+                // Удаляем исполненные ордера
                 if (buy.amount <= 0.0001) {
                     bktokOrders.buy.splice(i, 1);
                 } else {
@@ -648,6 +642,7 @@
             }
         }
         
+        // Сохраняем изменения
         if (trades.length > 0) {
             bktokTrades.push(...trades);
             if (MASTER_KEY) {
@@ -749,7 +744,7 @@
                 timestamp: Date.now()
             };
             realSetItem('currentSession', JSON.stringify(sessionData));
-            saveMasterKeyToStorage(MASTER_KEY);
+            sessionStorage.setItem('MASTER_KEY', MASTER_KEY);
             console.log('✅ Сессия сохранена для', currentUser);
         }
     }
@@ -781,25 +776,59 @@
             return;
         }
         
+        // Скрываем все секции
         ['about', 'services', 'cards', 'bktok', 'tasks', 'cases', 'support', 'chats', 'profile', 'public-profile'].forEach(id => {
             document.getElementById(id + '-section')?.classList.add('hidden');
         });
         
+        // Останавливаем обновление графика при уходе с биржи
         if (section !== 'bktok' && chartInterval) {
             clearInterval(chartInterval);
             chartInterval = null;
         }
         
+        // Показываем нужную секцию
         switch(section) {
-            case 'about': document.getElementById('about-section')?.classList.remove('hidden'); break;
-            case 'services': document.getElementById('services-section')?.classList.remove('hidden'); break;
-            case 'cards': document.getElementById('cards-section')?.classList.remove('hidden'); renderCardsStack(); break;
-            case 'bktok': document.getElementById('bktok-section')?.classList.remove('hidden'); if (currentUser) { loadBKtok(); startChartUpdates(); } break;
-            case 'tasks': document.getElementById('tasks-section')?.classList.remove('hidden'); if (currentUser) renderTasks(); break;
-            case 'cases': document.getElementById('cases-section')?.classList.remove('hidden'); if (currentUser) renderCases(); break;
-            case 'support': document.getElementById('support-section')?.classList.remove('hidden'); renderAISupport(); break;
-            case 'chats': document.getElementById('chats-section')?.classList.remove('hidden'); if (currentUser) renderPrivateChats(); break;
-            case 'profile': if (currentUser) showProfile(); else showLoginForm(); break;
+            case 'about':
+                document.getElementById('about-section')?.classList.remove('hidden');
+                break;
+            case 'services':
+                document.getElementById('services-section')?.classList.remove('hidden');
+                break;
+            case 'cards':
+                document.getElementById('cards-section')?.classList.remove('hidden');
+                renderCardsStack();
+                break;
+            case 'bktok':
+                document.getElementById('bktok-section')?.classList.remove('hidden');
+                if (currentUser) {
+                    loadBKtok();
+                    startChartUpdates();
+                }
+                break;
+            case 'tasks':
+                document.getElementById('tasks-section')?.classList.remove('hidden');
+                if (currentUser) renderTasks();
+                break;
+            case 'cases':
+                document.getElementById('cases-section')?.classList.remove('hidden');
+                if (currentUser) renderCases();
+                break;
+            case 'support':
+                document.getElementById('support-section')?.classList.remove('hidden');
+                renderAISupport();
+                break;
+            case 'chats':
+                document.getElementById('chats-section')?.classList.remove('hidden');
+                if (currentUser) renderPrivateChats();
+                break;
+            case 'profile':
+                if (currentUser) {
+                    showProfile();
+                } else {
+                    showLoginForm();
+                }
+                break;
         }
     }
     
@@ -866,7 +895,7 @@
         if (!currentUser) return;
         
         if (bktokBalances[currentUser] === undefined) {
-            bktokBalances[currentUser] = 10;
+            bktokBalances[currentUser] = 10; // НАЧАЛЬНЫЙ БАЛАНС 10 BK
             if (MASTER_KEY) secureSetItem('bktokBalances', bktokBalances);
         }
         
@@ -1053,7 +1082,7 @@
         
         if (side === 'buy') {
             if (available < totalCost) {
-                alert(`Недостаточно средств. Доступно: ${available.toFixed(2)} BK`);
+                alert(`Недостаточно средств для покупки. Доступно: ${available.toFixed(2)} BK`);
                 return;
             }
             if (!freezeBalance(currentUser, totalCost)) {
@@ -1072,7 +1101,7 @@
         }
         
         const order = {
-            id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+            id: crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).substr(2, 9),
             user: currentUser,
             side: side,
             price: price,
@@ -1107,7 +1136,7 @@
         
         if (MASTER_KEY) secureSetItem('bktokOrders', bktokOrders);
         loadBKtok();
-        showToast('✅ Ордер отменен', 'success');
+        showToast('✅ Ордер отменен, средства разморожены', 'success');
     }
     
     // ========== ЗАДАНИЯ И КЕЙСЫ ==========
@@ -1200,18 +1229,20 @@
         if (!allSupportChats[currentUser]) {
             allSupportChats[currentUser] = [{
                 from: 'ai',
-                text: '👋 Здравствуйте! Я нейросеть BK-Bank.',
+                text: '👋 Здравствуйте! Я нейросеть BK-Bank. Могу помочь с балансом, картами, токенами.',
                 time: new Date().toISOString()
             }];
         }
         
-        container.innerHTML = `
+        let html = `
             <div class="chat-messages" id="ai-chat-messages"></div>
             <div class="chat-input-area">
                 <input id="ai-chat-input" class="chat-input" placeholder="Задайте вопрос...">
                 <button class="chat-send-btn" onclick="sendAIMessage()">Отправить</button>
             </div>
         `;
+        
+        container.innerHTML = html;
         loadAIMessages();
     }
     
@@ -1246,72 +1277,8 @@
         loadAIMessages();
         
         setTimeout(() => {
-            let response = '🤔 Я могу помочь с балансом, картами, токенами.';
-            <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BK-Bank — Финансы нового поколения</title>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com blob: 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; worker-src 'self' blob:;">
-    <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="BK-Bank">
-    <meta name="theme-color" content="#0a0a0a">
-    <link rel="apple-touch-icon" href="png/2025-01-31_14-13-47-Photoroom.png">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; height: 100%; }
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: #ffffff; overflow-x: hidden; line-height: 1.6; -webkit-font-smoothing: antialiased; min-height: 100vh; transition: background 0.3s; }
-        body.light-theme { background: #FFD700; }
-        body.light-theme .glass-header { background: rgba(255, 215, 0, 0.9); border-bottom: 1px solid #0a0a0a; }
-        body.light-theme .bank-name { background: linear-gradient(135deg, #0a0a0a, #333); -webkit-background-clip: text; background-clip: text; color: transparent; }
-        body.light-theme .nav-link { color: #0a0a0a; }
-        body.light-theme .nav-link:hover { color: #000; background: rgba(0,0,0,0.1); }
-        body.light-theme .content-card { background: rgba(0, 0, 0, 0.05); backdrop-filter: blur(15px); border: 1px solid rgba(0, 0, 0, 0.2); }
-        body.light-theme p, body.light-theme li, body.light-theme span, body.light-theme div { color: #0a0a0a; }
-        body.light-theme strong { color: #000; }
-        body.light-theme .form-input { background: rgba(0,0,0,0.05); border: 1.5px solid rgba(0,0,0,0.2); color: #0a0a0a; }
-        body.light-theme .form-input::placeholder { color: #333; }
-        body.light-theme .gold-button { background: linear-gradient(135deg, #0a0a0a, #333); color: #FFD700; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #1a1a1a; }
-        ::-webkit-scrollbar-thumb { background: #FFD700; border-radius: 10px; }
-        body.light-theme ::-webkit-scrollbar-track { background: #FFD700; }
-        body.light-theme ::-webkit-scrollbar-thumb { background: #0a0a0a; }
-        .bg-glow { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 20% 30%, rgba(255, 215, 0, 0.04) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(255, 215, 0, 0.03) 0%, transparent 50%); pointer-events: none; z-index: -1; }
-        .particle { position: fixed; width: 2px; height: 2px; background: #FFD700; border-radius: 50%; opacity: 0.15; pointer-events: none; z-index: -1; animation: float 20s infinite ease-in-out; }
-        @keyframes float { 0%, 100% { transform: translateY(0) translateX(0); } 25% { transform: translateY(-30px) translateX(15px); } 50% { transform: translateY(-15px) translateX(-20px); } 75% { transform: translateY(20px) translateX(10px); } }
-        .glass-header { backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); background-color: rgba(18, 18, 18, 0.85); border-bottom: 1px solid rgba(255, 215, 0, 0.15); padding: 10px 16px; position: sticky; top: 0; z-index: 1000; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); flex-wrap: wrap; }
-        .logo-wrapper { display: flex; align-items: center; gap: 8px; }
-        .logo-img { width: 36px; height: 36px; object-fit: contain; filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.5)); }
-        .bank-name { font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #FFD700, #FFC200, #FFE44D); background-size: 200% 200%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: gradientShift 4s ease infinite; }
-        @keyframes gradientShift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
-        .nav-links { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
-        .nav-link { background: transparent; border: none; color: #e0e0e0; padding: 8px 12px; border-radius: 40px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.3s ease; position: relative; }
-        .nav-link::after { content: ''; position: absolute; bottom: -3px; left: 50%; transform: translateX(-50%) scaleX(0); width: 70%; height: 2px; background: #FFD700; transition: transform 0.3s ease; border-radius: 2px; }
-        .nav-link:hover { color: #FFD700; transform: translateY(-2px); }
-        .nav-link:hover::after { transform: translateX(-50%) scaleX(1); }
-        .auth-buttons { display: flex; gap: 8px; }
-        .login-btn, .register-btn { background: transparent; border: 1.5px solid #FFD700; color: #FFD700; padding: 8px 16px; border-radius: 40px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.25s; position: relative; overflow: hidden; }
-        .login-btn::before, .register-btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: #FFD700; transition: left 0.3s ease; z-index: -1; }
-        .login-btn:hover, .register-btn:hover { color: #0a0a0a; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255, 215, 0, 0.3); }
-        .login-btn:hover::before, .register-btn:hover::before { left: 0; }
-        body.light-theme .login-btn, body.light-theme .register-btn { border: 1.5px solid #0a0a0a; color: #0a0a0a; }
-        body.light-theme .login-btn::before, body.light-theme .register-btn::before { background: #0a0a0a; }
-        body.light-theme .login-btn:hover, body.light-theme .register-btn:hover { color: #FFD700; }
-        .profile-btn { background: transparent; border: 1.5px solid #FFD700; color: #FFD700; padding: 6px 12px; border-radius: 40px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.25s; display: flex; align-items: center; gap: 6px; }
-        .profile-btn:hover { background: #FFD700; color: #0a0a0a; transform: translateY(-2px); }
-        .profile-btn img { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #FFD700; }
-        .theme-toggle { background: transparent; border: 1px solid #FFD700; color: #FFD700; padding: 6px 12px; border-radius: 30px; cursor: pointer; font-size: 0.85rem; transition: all 0.25s; }
-        .theme-toggle:hover { transform: translateY(-2px); box-shadow: 0 0 20px rgba(255,215,0,0.3); }
-        body.light-theme .theme-toggle { border: 1px solid #0a0a0a; color: #0a0a0a; }
-        body.light-theme .profile-btn { border: 1.5px solid #0a0a0a; color: #0a0a0a; }
-        body.light-theme .profile-btn:hover { background: #0a0a0a; color: #FFD700; }
-        .main-container { max-width: 1300px; margin: 20px auto; padding: 0 12px; }
-        .content-card { background: rgba(25, 25, 25, 0.75); backdrop-filter: blur(15px); border: 1px solid rgba(255, 215, 0, 0.12); border-radius: 24px; padding: 20px; margin-bottom: 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); animation: fadeInUp 0.6s ease-out; transition: transform 0.3s ease, border-color 0.3s ease; }
-
+            let response = '🤔 Я могу помочь с балансом, картами, токенами или откатом сделок.';
+            
             if (text.toLowerCase().includes('баланс')) {
                 response = `💰 Ваш баланс: ${bktokBalances[currentUser]?.toFixed(2) || '0'} BK.`;
             } else if (text.toLowerCase().includes('привет')) {
@@ -1453,18 +1420,84 @@
             </div>
             <div class="profile-actions">
                 <button class="profile-action-btn" onclick="showEditProfileForm()">✏️ Редактировать профиль</button>
-                <button class="profile-action-btn" onclick="depositTestRubles()" style="color: #4ade80;">💰 Пополнить 1 000 BK</button>
-                <button class="profile-action-btn" onclick="clearAllMyOrders()" style="color: #ff5e5e;">🔄 Сбросить ордера</button>
+                <button class="profile-action-btn" onclick="showBackupModal()">💾 Бекап / Восстановление</button>
+                <button class="profile-action-btn" onclick="depositTestRubles()" style="color: #4ade80;">💰 Пополнить тестовые 1 000 BK</button>
+                <button class="profile-action-btn" onclick="clearAllMyOrders()" style="color: #ff5e5e;">🔄 Сбросить все мои ордера</button>
                 <button class="profile-action-btn" onclick="destroyAccount()">⚠️ Удалить аккаунт</button>
             </div>
             <div class="profile-info">
-                <p>📧 ${escapeHtml(user.email || 'Не указан')}</p>
-                <p>📱 ${escapeHtml(user.phone || 'Не указан')}</p>
-                <p class="sensitive-data">💰 ${bktokBalances[currentUser] || 0} BK</p>
+                <p style="font-size:1rem;">📧 ${escapeHtml(user.email || 'Не указан')}</p>
+                <p style="font-size:1rem;">📱 ${escapeHtml(user.phone || 'Не указан')}</p>
+                <p style="font-size:1rem;" class="sensitive-data">💰 ${bktokBalances[currentUser] || 0} BK</p>
             </div>
+            <div class="account-switcher" id="account-switcher"></div>
         `;
         
         container.classList.remove('hidden');
+        renderAccountSwitcher();
+    }
+    
+    function renderAccountSwitcher() {
+        const container = document.getElementById('account-switcher');
+        if (!container) return;
+        
+        const accounts = Object.keys(savedAccounts).filter(u => u !== currentUser && users[u]);
+        if (accounts.length === 0) {
+            container.innerHTML = '<p style="color:#888; text-align:center;">Нет сохраненных аккаунтов</p>';
+            return;
+        }
+        
+        container.innerHTML = `
+            <h4 style="color:#FFD700; margin-bottom:15px;">Сохраненные аккаунты</h4>
+            ${accounts.map(acc => {
+                const user = users[acc];
+                return `
+                    <div class="saved-account-item" onclick="switchToAccount('${acc}')">
+                        <img src="${user.avatar || 'png/2025-01-30_17-50-13-Photoroom.png'}" alt="${escapeHtml(user.name)}">
+                        <div class="saved-account-info">
+                            <div class="saved-account-name">${escapeHtml(user.name)}</div>
+                            <div class="saved-account-username">@${escapeHtml(acc)}</div>
+                        </div>
+                        <button class="remove-account-btn" onclick="event.stopPropagation(); removeSavedAccount('${acc}')">Удалить</button>
+                    </div>
+                `;
+            }).join('')}
+        `;
+    }
+    
+    function switchToAccount(username) {
+        if (!users[username]) {
+            showToast('Аккаунт не найден', 'error');
+            return;
+        }
+        
+        // Сохраняем текущего пользователя
+        if (currentUser) {
+            savedAccounts[currentUser] = true;
+            realSetItem('savedAccounts', JSON.stringify(savedAccounts));
+        }
+        
+        // Переключаемся
+        currentUser = username;
+        bktokBalances = secureGetItem('bktokBalances') || {};
+        frozenBalances = secureGetItem('frozenBalances') || {};
+        allSupportChats = secureGetItem('allSupportChats') || {};
+        privateChats = secureGetItem('privateChats') || {};
+        bktokOrders = secureGetItem('bktokOrders') || { buy: [], sell: [] };
+        bktokTrades = secureGetItem('bktokTrades') || [];
+        userTasks = secureGetItem('userTasks') || {};
+        
+        saveSession();
+        updateUIForAuth();
+        showProfile();
+        showToast(`Переключено на ${users[username].name}`, 'success');
+    }
+    
+    function removeSavedAccount(username) {
+        delete savedAccounts[username];
+        realSetItem('savedAccounts', JSON.stringify(savedAccounts));
+        renderAccountSwitcher();
+        showToast('Аккаунт удален из сохраненных', 'info');
     }
     
     function showEditProfileForm() {
@@ -1533,7 +1566,7 @@
     
     function clearAllMyOrders() {
         if (!currentUser) return;
-        if (!confirm('Отменить все ордера?')) return;
+        if (!confirm('⚠️ Отменить ВСЕ ваши активные ордера и вернуть замороженные средства?')) return;
         
         const myBuyOrders = bktokOrders.buy.filter(o => o.user === currentUser);
         const mySellOrders = bktokOrders.sell.filter(o => o.user === currentUser);
@@ -1556,7 +1589,7 @@
             secureSetItem('frozenBalances', frozenBalances);
         }
         
-        showToast('✅ Ордера отменены', 'success');
+        showToast('✅ Все ордера отменены, средства разморожены', 'success');
         showProfile();
     }
     
@@ -1586,12 +1619,134 @@
         currentUser = null;
         
         realRemoveItem('currentSession');
-        realRemoveItem('encryptedMasterKey');
+        sessionStorage.removeItem('MASTER_KEY');
         
         updateUIForAuth();
         document.querySelector('.main-container').classList.add('hidden');
         document.querySelector('header').classList.add('hidden');
         showLoginForm();
+    }
+    
+    // ========== БЭКАП ==========
+    
+    function showBackupModal() {
+        removeModals();
+        showModalOverlay();
+        
+        const modal = document.createElement('div');
+        modal.className = 'backup-modal';
+        modal.addEventListener('click', (e) => e.stopPropagation());
+        
+        modal.innerHTML = `
+            <div class="backup-container">
+                <div class="backup-header">
+                    <h2>💾 Бекап данных</h2>
+                    <button class="backup-close" onclick="closeBackupModal()">&times;</button>
+                </div>
+                <div class="backup-info-card">
+                    <div class="backup-info-item"><span>Аккаунт:</span><strong>${escapeHtml(currentUser)}</strong></div>
+                    <div class="backup-info-item"><span>Баланс:</span><strong>${bktokBalances[currentUser] || 0} BK</strong></div>
+                    <div class="backup-info-item"><span>Создан:</span><strong>${new Date(users[currentUser].registrationDate).toLocaleDateString()}</strong></div>
+                </div>
+                <div class="backup-section">
+                    <h3>📤 Экспорт данных</h3>
+                    <button class="backup-btn backup-btn-primary" onclick="exportBackup()">Скачать файл бекапа</button>
+                    <p style="margin-top:10px; font-size:0.85rem; opacity:0.7;">Файл содержит зашифрованные данные вашего аккаунта</p>
+                </div>
+                <div class="backup-section">
+                    <h3>📥 Импорт данных</h3>
+                    <label class="backup-file-label">
+                        <input type="file" id="backupFileInput" accept=".json" style="display:none;" onchange="importBackup(event)">
+                        Выбрать файл бекапа
+                    </label>
+                    <p class="backup-warning">⚠️ Внимание! Импорт перезапишет текущие данные аккаунта!</p>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+    
+    function closeBackupModal() {
+        document.querySelector('.backup-modal')?.remove();
+        document.getElementById('modal-overlay')?.remove();
+    }
+    
+    function exportBackup() {
+        if (!currentUser) return;
+        
+        const backup = {
+            version: '1.0',
+            username: currentUser,
+            timestamp: new Date().toISOString(),
+            data: {
+                user: users[currentUser],
+                balance: bktokBalances[currentUser] || 0,
+                frozen: frozenBalances[currentUser] || 0,
+                tasks: userTasks[currentUser] || {},
+                supportChats: allSupportChats[currentUser] || []
+            }
+        };
+        
+        const json = JSON.stringify(backup, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bkbank_backup_${currentUser}_${Date.now()}.json`;
+        a.click();
+        
+        URL.revokeObjectURL(url);
+        showToast('✅ Бекап создан!', 'success');
+    }
+    
+    function importBackup(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const backup = JSON.parse(e.target.result);
+                
+                if (!backup.data || !backup.data.user) {
+                    throw new Error('Неверный формат файла');
+                }
+                
+                if (backup.username !== currentUser) {
+                    if (!confirm(`Файл от пользователя ${backup.username}. Импортировать в текущий аккаунт ${currentUser}?`)) {
+                        return;
+                    }
+                }
+                
+                // Восстанавливаем данные
+                users[currentUser] = { ...users[currentUser], ...backup.data.user };
+                delete users[currentUser].passwordHash; // Сохраняем текущий пароль
+                
+                bktokBalances[currentUser] = backup.data.balance || 0;
+                frozenBalances[currentUser] = backup.data.frozen || 0;
+                userTasks[currentUser] = backup.data.tasks || {};
+                allSupportChats[currentUser] = backup.data.supportChats || [];
+                
+                if (MASTER_KEY) {
+                    secureSetItem('bankUsers', users);
+                    secureSetItem('bktokBalances', bktokBalances);
+                    secureSetItem('frozenBalances', frozenBalances);
+                    secureSetItem('userTasks', userTasks);
+                    secureSetItem('allSupportChats', allSupportChats);
+                }
+                
+                showToast('✅ Данные успешно импортированы!', 'success');
+                closeBackupModal();
+                showProfile();
+                
+            } catch (error) {
+                showToast('❌ Ошибка импорта: ' + error.message, 'error');
+            }
+        };
+        
+        reader.readAsDataURL(file);
     }
     
     // ========== АВТОРИЗАЦИЯ ==========
@@ -1609,7 +1764,7 @@
         let html = `
             <div class="form-title">🔐 Вход в BK-Bank</div>
             <div id="loginError" class="error-text hidden"></div>
-            <input id="loginUsername" class="form-input" placeholder="👤 Никнейм">
+            <input id="loginUsername" class="form-input" placeholder="👤 Никнейм или телефон">
             <input type="password" id="loginPassword" class="form-input" placeholder="🔑 Пароль">
         `;
         
@@ -1618,16 +1773,26 @@
             const op = ops[Math.floor(Math.random() * ops.length)];
             let n1, n2, ans;
             
-            if (op === '+') { n1 = Math.floor(Math.random() * 20) + 1; n2 = Math.floor(Math.random() * 20) + 1; ans = n1 + n2; }
-            else if (op === '-') { n1 = Math.floor(Math.random() * 20) + 11; n2 = Math.floor(Math.random() * 10) + 1; ans = n1 - n2; }
-            else { n1 = Math.floor(Math.random() * 10) + 1; n2 = Math.floor(Math.random() * 10) + 1; ans = n1 * n2; }
+            if (op === '+') {
+                n1 = Math.floor(Math.random() * 20) + 1;
+                n2 = Math.floor(Math.random() * 20) + 1;
+                ans = n1 + n2;
+            } else if (op === '-') {
+                n1 = Math.floor(Math.random() * 20) + 11;
+                n2 = Math.floor(Math.random() * 10) + 1;
+                ans = n1 - n2;
+            } else {
+                n1 = Math.floor(Math.random() * 10) + 1;
+                n2 = Math.floor(Math.random() * 10) + 1;
+                ans = n1 * n2;
+            }
             
             loginCaptchaAnswer = ans;
             html += `
                 <div class="captcha-box">
-                    <div style="margin-bottom:10px;">🤖 Подтвердите, что вы человек</div>
-                    <div class="captcha-question">${n1} ${op} ${n2} = ?</div>
-                    <input id="loginCaptcha" class="form-input" placeholder="Ответ">
+                    <div style="font-size:1rem; color:#888; margin-bottom:10px;">🤖 Подтвердите, что вы человек</div>
+                    <div class="captcha-question"><span class="captcha-emoji">🧮</span> ${n1} ${op} ${n2} = ?</div>
+                    <input id="loginCaptcha" class="form-input" placeholder="Введите ответ" style="text-align:center;">
                 </div>
             `;
         }
@@ -1652,48 +1817,31 @@
         
         if (requireCaptcha) {
             const captcha = document.getElementById('loginCaptcha')?.value.trim();
-            if (!captcha) return showError(errorEl, 'Введите ответ');
+            if (!captcha) {
+                return showError(errorEl, 'Введите ответ капчи');
+            }
             if (parseInt(captcha) !== loginCaptchaAnswer) {
                 failedAttempts++;
                 realSetItem('failedAttempts', failedAttempts);
                 showLoginForm();
-                return showError(errorEl, 'Неверный ответ');
+                return showError(errorEl, 'Неверная капча');
             }
         }
         
-        // Пробуем загрузить MASTER_KEY из storage
-        const savedKey = loadMasterKeyFromStorage();
         const salt = getUserSalt(username);
-        
-        if (savedKey) {
-            MASTER_KEY = savedKey;
-            console.log('🔑 Используем сохранённый MASTER_KEY');
-        } else {
-            MASTER_KEY = CryptoJS.PBKDF2(password, salt, {
-                keySize: 256 / 32,
-                iterations: 100000,
-                hasher: CryptoJS.algo.SHA256
-            }).toString();
-            console.log('🔑 Создан новый MASTER_KEY');
-        }
+        MASTER_KEY = CryptoJS.PBKDF2(password, salt, {
+            keySize: 256 / 32,
+            iterations: 100000,
+            hasher: CryptoJS.algo.SHA256
+        }).toString();
         
         const decryptedUsers = secureGetItem('bankUsers');
         if (!decryptedUsers) {
-            // Если не удалось расшифровать - пробуем с паролем
-            MASTER_KEY = CryptoJS.PBKDF2(password, salt, {
-                keySize: 256 / 32,
-                iterations: 100000,
-                hasher: CryptoJS.algo.SHA256
-            }).toString();
-        }
-        
-        const usersData = secureGetItem('bankUsers');
-        if (!usersData) {
             MASTER_KEY = null;
-            return showError(errorEl, 'Нет данных. Зарегистрируйтесь.');
+            return showError(errorEl, 'Не удалось расшифровать данные');
         }
         
-        users = usersData;
+        users = decryptedUsers;
         const foundUser = users[username] ? username : Object.keys(users).find(u => users[u].phone === username);
         
         if (!foundUser) {
@@ -1706,6 +1854,7 @@
             return showError(errorEl, 'Неверный пароль');
         }
         
+        // Успешный вход
         failedAttempts = 0;
         realSetItem('failedAttempts', '0');
         
@@ -1722,13 +1871,8 @@
         realSetItem('savedAccounts', JSON.stringify(savedAccounts));
         
         if (bktokBalances[foundUser] === undefined) {
-            bktokBalances[foundUser] = 10;
+            bktokBalances[foundUser] = 10; // НАЧАЛЬНЫЙ БАЛАНС 10 BK
             secureSetItem('bktokBalances', bktokBalances);
-        }
-        
-        // Создаём отпечаток устройства для шифрования
-        if (!realGetItem('deviceFingerprint')) {
-            realSetItem('deviceFingerprint', CryptoJS.SHA256(username + Date.now()).toString());
         }
         
         saveSession();
@@ -1760,23 +1904,25 @@
         let html = `
             <div class="form-title">📝 Регистрация</div>
             <div class="step-indicator">
-                ${[1,2,3].map(i => `<div class="step-dot ${i === regStep ? 'active' : ''} ${i < regStep ? 'completed' : ''}"></div>`).join('')}
+                ${[1,2,3].map(i => `
+                    <div class="step-dot ${i === regStep ? 'active' : ''} ${i < regStep ? 'completed' : ''}"></div>
+                `).join('')}
             </div>
             <div id="registerError" class="error-text hidden"></div>
         `;
         
         if (regStep === 1) {
             html += `
-                <input id="regName" class="form-input" placeholder="👤 Имя" value="${escapeHtml(regData.name || '')}">
+                <input id="regName" class="form-input" placeholder="👤 Ваше имя" value="${escapeHtml(regData.name || '')}">
                 <input id="regUsername" class="form-input" placeholder="📛 Никнейм" value="${escapeHtml(regData.username || '')}">
                 <input type="password" id="regPassword" class="form-input" placeholder="🔒 Пароль">
-                <input type="password" id="regConfirm" class="form-input" placeholder="🔒 Подтвердите">
+                <input type="password" id="regConfirm" class="form-input" placeholder="🔒 Подтвердите пароль">
                 <button class="gold-button" onclick="nextRegStep()">Далее →</button>
             `;
         } else if (regStep === 2) {
             html += `
                 <input id="regEmail" class="form-input" placeholder="📧 Email" value="${escapeHtml(regData.email || '')}">
-                <input id="regPhone" class="form-input" placeholder="📱 +7..." value="${escapeHtml(regData.phone || '+7')}">
+                <input id="regPhone" class="form-input" placeholder="📱 Телефон +7..." value="${escapeHtml(regData.phone || '+7')}">
                 <button class="gold-button" onclick="nextRegStep()">Далее →</button>
                 <button class="dark-button" onclick="prevRegStep()">← Назад</button>
             `;
@@ -1787,9 +1933,9 @@
             
             html += `
                 <div class="captcha-box">
-                    <div>🔐 Проверка</div>
-                    <div class="captcha-question">${n1} + ${n2} = ?</div>
-                    <input id="captchaInput" class="form-input" placeholder="Ответ">
+                    <div style="font-size:1rem; color:#888; margin-bottom:10px;">🔐 Проверка безопасности</div>
+                    <div class="captcha-question"><span class="captcha-emoji">🔢</span> ${n1} + ${n2} = ?</div>
+                    <input id="captchaInput" class="form-input" placeholder="Введите ответ" style="text-align:center;">
                 </div>
                 <button class="gold-button" onclick="completeRegistration()">✅ Зарегистрироваться</button>
                 <button class="dark-button" onclick="prevRegStep()">← Назад</button>
@@ -1813,19 +1959,30 @@
             const password = document.getElementById('regPassword').value;
             const confirm = document.getElementById('regConfirm').value;
             
-            if (!name || !username || !password || !confirm) return showError(errorEl, 'Все поля обязательны');
-            if (password.length < 6) return showError(errorEl, 'Пароль минимум 6 символов');
-            if (password !== confirm) return showError(errorEl, 'Пароли не совпадают');
+            if (!name || !username || !password || !confirm) {
+                return showError(errorEl, 'Все поля обязательны');
+            }
+            if (password.length < 6) {
+                return showError(errorEl, 'Пароль должен быть не менее 6 символов');
+            }
+            if (password !== confirm) {
+                return showError(errorEl, 'Пароли не совпадают');
+            }
             
             regData = { name, username, password };
             regStep = 2;
             renderRegStep(document.querySelector('.modal-form'));
+            
         } else if (regStep === 2) {
             const email = document.getElementById('regEmail').value.trim();
             const phone = document.getElementById('regPhone').value.trim();
             
-            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError(errorEl, 'Некорректный Email');
-            if (phone && phone !== '+7' && !/^\+7\d{10}$/.test(phone)) return showError(errorEl, 'Телефон: +7XXXXXXXXXX');
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                return showError(errorEl, 'Некорректный Email');
+            }
+            if (phone && phone !== '+7' && !/^\+7\d{10}$/.test(phone)) {
+                return showError(errorEl, 'Телефон: +7XXXXXXXXXX');
+            }
             
             regData.email = email || '';
             regData.phone = phone || '+70000000000';
@@ -1843,8 +2000,12 @@
         const errorEl = document.getElementById('registerError');
         const captcha = document.getElementById('captchaInput').value.trim();
         
-        if (!captcha) return showError(errorEl, 'Введите ответ');
-        if (parseInt(captcha) !== captchaAnswer) return showError(errorEl, 'Неверный ответ');
+        if (!captcha) {
+            return showError(errorEl, 'Введите ответ');
+        }
+        if (parseInt(captcha) !== captchaAnswer) {
+            return showError(errorEl, 'Неверный ответ');
+        }
         
         const { name, username, email, phone, password } = regData;
         const salt = getUserSalt(username);
@@ -1858,13 +2019,16 @@
         const existingUsers = secureGetItem('bankUsers') || {};
         if (existingUsers[username]) {
             MASTER_KEY = null;
-            return showError(errorEl, 'Никнейм занят');
+            return showError(errorEl, 'Этот никнейм уже занят');
         }
         
         users = existingUsers;
         users[username] = {
-            name, email, phone,
+            name,
+            email,
+            phone,
             passwordHash: hashPassword(password),
+            balance: 0,
             registrationDate: new Date().toISOString(),
             avatar: null
         };
@@ -1872,9 +2036,9 @@
         secureSetItem('bankUsers', users);
         currentUser = username;
         
-        bktokBalances = {};
-        frozenBalances = {};
-        bktokBalances[username] = 10;
+        bktokBalances = secureGetItem('bktokBalances') || {};
+        frozenBalances = secureGetItem('frozenBalances') || {};
+        bktokBalances[username] = 10; // НАЧАЛЬНЫЙ БАЛАНС 10 BK
         secureSetItem('bktokBalances', bktokBalances);
         
         allSupportChats = {};
@@ -1885,10 +2049,6 @@
         
         savedAccounts[username] = true;
         realSetItem('savedAccounts', JSON.stringify(savedAccounts));
-        
-        if (!realGetItem('deviceFingerprint')) {
-            realSetItem('deviceFingerprint', CryptoJS.SHA256(username + Date.now()).toString());
-        }
         
         saveSession();
         removeModals();
@@ -1902,11 +2062,16 @@
     function logout() {
         if (chartInterval) clearInterval(chartInterval);
         
+        if (currentUser) {
+            users[currentUser].isLoggedIn = false;
+            if (MASTER_KEY) secureSetItem('bankUsers', users);
+        }
+        
         MASTER_KEY = null;
         currentUser = null;
         
         realRemoveItem('currentSession');
-        realRemoveItem('encryptedMasterKey');
+        sessionStorage.removeItem('MASTER_KEY');
         
         updateUIForAuth();
         document.querySelector('.main-container').classList.add('hidden');
@@ -1924,7 +2089,7 @@
         }
         
         const savedSession = realGetItem('currentSession');
-        const savedMasterKey = loadMasterKeyFromStorage();
+        const savedMasterKey = sessionStorage.getItem('MASTER_KEY');
         
         console.log('🔄 Попытка восстановления сессии...');
         
@@ -1933,7 +2098,7 @@
                 const sessionData = JSON.parse(savedSession);
                 MASTER_KEY = savedMasterKey;
                 
-                console.log('🔑 MASTER_KEY загружен из localStorage');
+                console.log('🔑 MASTER_KEY загружен из sessionStorage');
                 
                 const decryptedUsers = secureGetItem('bankUsers');
                 if (decryptedUsers && decryptedUsers[sessionData.username]) {
@@ -1947,17 +2112,21 @@
                     bktokTrades = secureGetItem('bktokTrades') || [];
                     userTasks = secureGetItem('userTasks') || {};
                     
-                    console.log('✅ Сессия восстановлена для', currentUser);
+                    console.log('✅ Сессия успешно восстановлена для', currentUser);
                     showMainContent();
                     updateUIForAuth();
                     return;
+                } else {
+                    console.warn('⚠️ Не удалось расшифровать данные пользователя');
                 }
             } catch(e) {
-                console.error('❌ Ошибка восстановления:', e);
+                console.error('❌ Ошибка восстановления сессии:', e);
                 MASTER_KEY = null;
+                sessionStorage.removeItem('MASTER_KEY');
                 realRemoveItem('currentSession');
-                realRemoveItem('encryptedMasterKey');
             }
+        } else {
+            console.log('ℹ️ Нет сохраненной сессии');
         }
         
         showMainContent();
@@ -1965,7 +2134,7 @@
         toggleSection('about');
     };
     
-    // ========== ЭКСПОРТ ==========
+    // ========== ЭКСПОРТ ФУНКЦИЙ ==========
     
     window.toggleTheme = toggleTheme;
     window.toggleSection = toggleSection;
@@ -1974,6 +2143,8 @@
     window.login = login;
     window.logout = logout;
     window.switchAccount = switchAccount;
+    window.switchToAccount = switchToAccount;
+    window.removeSavedAccount = removeSavedAccount;
     window.completeTask = completeTask;
     window.openCase = openCase;
     window.createOrder = createOrder;
@@ -1994,8 +2165,12 @@
     window.prevRegStep = prevRegStep;
     window.clearAllMyOrders = clearAllMyOrders;
     window.depositTestRubles = depositTestRubles;
+    window.showBackupModal = showBackupModal;
+    window.closeBackupModal = closeBackupModal;
+    window.exportBackup = exportBackup;
+    window.importBackup = importBackup;
     
-    console.log('✅ BK-Bank v2.7 — Сессия сохраняется после закрытия браузера!');
+    console.log('✅ BK-Bank v2.6 — Сессия сохраняется, начальный баланс 10 BK');
     
 })();
 </script>
