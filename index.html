@@ -12,7 +12,6 @@
     <link rel="apple-touch-icon" href="png/2025-01-31_14-13-47-Photoroom.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
     <style>
-        /* ВЕСЬ ТВОЙ ОРИГИНАЛЬНЫЙ CSS ОСТАЕТСЯ БЕЗ ИЗМЕНЕНИЙ */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; height: 100%; }
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: #ffffff; overflow-x: hidden; line-height: 1.6; -webkit-font-smoothing: antialiased; min-height: 100vh; transition: background 0.3s; }
@@ -404,13 +403,11 @@
 (function() {
     "use strict";
     
-    // Проверка загрузки CryptoJS
     if (typeof CryptoJS === 'undefined') {
         alert('Ошибка: CryptoJS не загружен!');
         return;
     }
     
-    // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
     let MASTER_KEY = null;
     let users = {};
     let currentUser = null;
@@ -435,20 +432,15 @@
     let devtoolsOpen = false;
     let isTabActive = true;
     
-    // Константы
     const BASE_SALT = "BK_SECURE_SALT_V2_2026";
     const SALT = "BK_BANK_STATIC_SALT_2024";
     const threshold = 160;
     
-    // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
-    
-    // Получение реального localStorage
     const _realStorage = window.localStorage;
     function realGetItem(key) { return _realStorage.getItem(key); }
     function realSetItem(key, value) { _realStorage.setItem(key, value); }
     function realRemoveItem(key) { _realStorage.removeItem(key); }
     
-    // Загрузка нешифрованных данных
     function loadUnencryptedData() {
         failedAttempts = parseInt(realGetItem('failedAttempts') || '0');
         lockUntil = parseInt(realGetItem('lockUntil') || '0');
@@ -457,7 +449,6 @@
         savedAccounts = JSON.parse(realGetItem('savedAccounts') || '{}');
     }
     
-    // Экранирование HTML
     function escapeHtml(text) {
         if (!text) return '';
         const div = document.createElement('div');
@@ -465,7 +456,6 @@
         return div.innerHTML;
     }
     
-    // Сравнение строк в постоянном времени
     function constantTimeCompare(a, b) {
         if (a.length !== b.length) return false;
         let result = 0;
@@ -475,17 +465,14 @@
         return result === 0;
     }
     
-    // Получение соли пользователя
     function getUserSalt(username) {
         return CryptoJS.SHA256(username + BASE_SALT).toString();
     }
     
-    // Хеширование пароля
     function hashPassword(p) {
         return CryptoJS.SHA256(p + getUserSalt(p)).toString();
     }
     
-    // Шифрованное сохранение
     function secureSetItem(key, value) {
         if (!MASTER_KEY) return;
         try {
@@ -498,7 +485,6 @@
         }
     }
     
-    // Шифрованная загрузка
     function secureGetItem(key) {
         if (!MASTER_KEY) return null;
         const stored = realGetItem(key);
@@ -517,8 +503,6 @@
             return null;
         }
     }
-    
-    // ========== УПРАВЛЕНИЕ БАЛАНСАМИ ==========
     
     function updateBalance(user, amount, operation) {
         if (!currentUser) return false;
@@ -553,14 +537,10 @@
         return (bktokBalances[user] || 0) - (frozenBalances[user] || 0);
     }
     
-    // ========== ИСПРАВЛЕННАЯ ФУНКЦИЯ МАТЧИНГА ОРДЕРОВ ==========
-    
     function matchOrders() {
-        // Проверка на слишком много итераций
         let iterationCount = 0;
         const MAX_ITERATIONS = 1000;
         
-        // Сортируем ордера
         bktokOrders.buy.sort((a, b) => b.price - a.price || a.created - b.created);
         bktokOrders.sell.sort((a, b) => a.price - b.price || a.created - b.created);
         
@@ -573,42 +553,35 @@
             const buy = bktokOrders.buy[i];
             const sell = bktokOrders.sell[j];
             
-            // Проверяем, можем ли мы матчить
             if (buy.price >= sell.price && buy.user !== sell.user) {
                 const amount = Math.min(buy.amount, sell.amount);
                 const price = sell.price;
                 const fee = amount * price * 0.001;
                 
-                // Проверяем доступные балансы
                 const buyerAvailable = getAvailableBalance(buy.user);
                 const sellerAvailable = getAvailableBalance(sell.user);
                 
-                // Проверяем достаточно ли средств у покупателя
                 if (buyerAvailable < amount * price + fee) {
                     console.warn('Недостаточно средств у покупателя', buy.user);
                     i++;
                     continue;
                 }
                 
-                // Проверяем достаточно ли BK у продавца
                 if (sellerAvailable < amount) {
                     console.warn('Недостаточно BK у продавца', sell.user);
                     j++;
                     continue;
                 }
                 
-                // Размораживаем средства
                 unfreezeBalance(buy.user, amount * price + fee);
                 unfreezeBalance(sell.user, amount);
                 
-                // Обновляем балансы
                 bktokBalances[buy.user] = (bktokBalances[buy.user] || 0) - (amount * price + fee);
                 bktokBalances[buy.user] = (bktokBalances[buy.user] || 0) + amount;
                 
                 bktokBalances[sell.user] = (bktokBalances[sell.user] || 0) - amount;
                 bktokBalances[sell.user] = (bktokBalances[sell.user] || 0) + (amount * price - fee);
                 
-                // Создаем запись о сделке
                 trades.push({
                     id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
                     buyer: buy.user,
@@ -619,11 +592,9 @@
                     time: new Date().toISOString()
                 });
                 
-                // Уменьшаем количество в ордерах
                 buy.amount -= amount;
                 sell.amount -= amount;
                 
-                // Удаляем исполненные ордера
                 if (buy.amount <= 0.0001) {
                     bktokOrders.buy.splice(i, 1);
                 } else {
@@ -642,7 +613,6 @@
             }
         }
         
-        // Сохраняем изменения
         if (trades.length > 0) {
             bktokTrades.push(...trades);
             if (MASTER_KEY) {
@@ -656,8 +626,6 @@
             secureSetItem('bktokOrders', bktokOrders);
         }
     }
-    
-    // ========== UI ФУНКЦИИ ==========
     
     function showToast(message, type = 'info') {
         const toast = document.createElement('div');
@@ -767,8 +735,6 @@
         document.body.appendChild(overlay);
     }
     
-    // ========== ФУНКЦИИ РАЗДЕЛОВ ==========
-    
     function toggleSection(section) {
         if (!currentUser && (section === 'profile' || section === 'chats' || 
             section === 'bktok' || section === 'tasks' || section === 'cases')) {
@@ -776,18 +742,15 @@
             return;
         }
         
-        // Скрываем все секции
         ['about', 'services', 'cards', 'bktok', 'tasks', 'cases', 'support', 'chats', 'profile', 'public-profile'].forEach(id => {
             document.getElementById(id + '-section')?.classList.add('hidden');
         });
         
-        // Останавливаем обновление графика при уходе с биржи
         if (section !== 'bktok' && chartInterval) {
             clearInterval(chartInterval);
             chartInterval = null;
         }
         
-        // Показываем нужную секцию
         switch(section) {
             case 'about':
                 document.getElementById('about-section')?.classList.remove('hidden');
@@ -836,8 +799,6 @@
         document.body.classList.toggle('light-theme');
         realSetItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
     }
-    
-    // ========== КАРТЫ ==========
     
     const cardList = [
         { img: 'png/2025-01-30_15-13-31-Photoroom.png' },
@@ -889,13 +850,11 @@
         }
     }
     
-    // ========== БИРЖА ==========
-    
     function loadBKtok() {
         if (!currentUser) return;
         
         if (bktokBalances[currentUser] === undefined) {
-            bktokBalances[currentUser] = 10; // НАЧАЛЬНЫЙ БАЛАНС 10 BK
+            bktokBalances[currentUser] = 10;
             if (MASTER_KEY) secureSetItem('bktokBalances', bktokBalances);
         }
         
@@ -1139,8 +1098,6 @@
         showToast('✅ Ордер отменен, средства разморожены', 'success');
     }
     
-    // ========== ЗАДАНИЯ И КЕЙСЫ ==========
-    
     const tasks = [
         { id: 'daily', name: 'Ежедневный вход', reward: 10, cooldown: 86400000 },
         { id: 'profile', name: 'Заполнить профиль', reward: 50, once: true },
@@ -1216,8 +1173,6 @@
         showWelcomeMessage(`Выигрыш: ${win} BK!`);
         renderCases();
     }
-    
-    // ========== ПОДДЕРЖКА ==========
     
     function renderAISupport() {
         const container = document.getElementById('support-container');
@@ -1295,8 +1250,6 @@
             loadAIMessages();
         }, 800);
     }
-    
-    // ========== ЧАТЫ ==========
     
     function renderPrivateChats() {
         const container = document.getElementById('chats-container');
@@ -1395,8 +1348,6 @@
         loadPrivateChatMessages();
     }
     
-    // ========== ПРОФИЛЬ ==========
-    
     function showProfile() {
         if (!currentUser) return;
         
@@ -1471,13 +1422,11 @@
             return;
         }
         
-        // Сохраняем текущего пользователя
         if (currentUser) {
             savedAccounts[currentUser] = true;
             realSetItem('savedAccounts', JSON.stringify(savedAccounts));
         }
         
-        // Переключаемся
         currentUser = username;
         bktokBalances = secureGetItem('bktokBalances') || {};
         frozenBalances = secureGetItem('frozenBalances') || {};
@@ -1627,8 +1576,6 @@
         showLoginForm();
     }
     
-    // ========== БЭКАП ==========
-    
     function showBackupModal() {
         removeModals();
         showModalOverlay();
@@ -1720,9 +1667,8 @@
                     }
                 }
                 
-                // Восстанавливаем данные
                 users[currentUser] = { ...users[currentUser], ...backup.data.user };
-                delete users[currentUser].passwordHash; // Сохраняем текущий пароль
+                delete users[currentUser].passwordHash;
                 
                 bktokBalances[currentUser] = backup.data.balance || 0;
                 frozenBalances[currentUser] = backup.data.frozen || 0;
@@ -1748,8 +1694,6 @@
         
         reader.readAsDataURL(file);
     }
-    
-    // ========== АВТОРИЗАЦИЯ ==========
     
     function showLoginForm() {
         removeModals();
@@ -1854,7 +1798,6 @@
             return showError(errorEl, 'Неверный пароль');
         }
         
-        // Успешный вход
         failedAttempts = 0;
         realSetItem('failedAttempts', '0');
         
@@ -1871,7 +1814,7 @@
         realSetItem('savedAccounts', JSON.stringify(savedAccounts));
         
         if (bktokBalances[foundUser] === undefined) {
-            bktokBalances[foundUser] = 10; // НАЧАЛЬНЫЙ БАЛАНС 10 BK
+            bktokBalances[foundUser] = 10;
             secureSetItem('bktokBalances', bktokBalances);
         }
         
@@ -2038,7 +1981,7 @@
         
         bktokBalances = secureGetItem('bktokBalances') || {};
         frozenBalances = secureGetItem('frozenBalances') || {};
-        bktokBalances[username] = 10; // НАЧАЛЬНЫЙ БАЛАНС 10 BK
+        bktokBalances[username] = 10;
         secureSetItem('bktokBalances', bktokBalances);
         
         allSupportChats = {};
@@ -2079,9 +2022,13 @@
         showLoginForm();
     }
     
-    // ========== ИНИЦИАЛИЗАЦИЯ ==========
-    
     loadUnencryptedData();
+    
+    window.addEventListener('beforeunload', () => {
+        if (currentUser && MASTER_KEY) {
+            saveSession();
+        }
+    });
     
     window.onload = async () => {
         if (realGetItem('theme') === 'light') {
@@ -2133,8 +2080,6 @@
         updateUIForAuth();
         toggleSection('about');
     };
-    
-    // ========== ЭКСПОРТ ФУНКЦИЙ ==========
     
     window.toggleTheme = toggleTheme;
     window.toggleSection = toggleSection;
