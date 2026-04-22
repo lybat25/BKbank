@@ -712,7 +712,7 @@
                 timestamp: Date.now()
             };
             realSetItem('currentSession', JSON.stringify(sessionData));
-            sessionStorage.setItem('MASTER_KEY', MASTER_KEY);
+            realSetItem('MASTER_KEY', MASTER_KEY);
             console.log('✅ Сессия сохранена для', currentUser);
         }
     }
@@ -1568,7 +1568,7 @@
         currentUser = null;
         
         realRemoveItem('currentSession');
-        sessionStorage.removeItem('MASTER_KEY');
+        realRemoveItem('MASTER_KEY');
         
         updateUIForAuth();
         document.querySelector('.main-container').classList.add('hidden');
@@ -2014,7 +2014,7 @@
         currentUser = null;
         
         realRemoveItem('currentSession');
-        sessionStorage.removeItem('MASTER_KEY');
+        realRemoveItem('MASTER_KEY');
         
         updateUIForAuth();
         document.querySelector('.main-container').classList.add('hidden');
@@ -2036,7 +2036,7 @@
         }
         
         const savedSession = realGetItem('currentSession');
-        const savedMasterKey = sessionStorage.getItem('MASTER_KEY');
+        const savedMasterKey = realGetItem('MASTER_KEY');
         
         console.log('🔄 Попытка восстановления сессии...');
         
@@ -2045,7 +2045,7 @@
                 const sessionData = JSON.parse(savedSession);
                 MASTER_KEY = savedMasterKey;
                 
-                console.log('🔑 MASTER_KEY загружен из sessionStorage');
+                console.log('🔑 MASTER_KEY загружен из localStorage');
                 
                 const decryptedUsers = secureGetItem('bankUsers');
                 if (decryptedUsers && decryptedUsers[sessionData.username]) {
@@ -2069,7 +2069,7 @@
             } catch(e) {
                 console.error('❌ Ошибка восстановления сессии:', e);
                 MASTER_KEY = null;
-                sessionStorage.removeItem('MASTER_KEY');
+                realRemoveItem('MASTER_KEY');
                 realRemoveItem('currentSession');
             }
         } else {
