@@ -821,17 +821,20 @@
             color: #FFE44D !important;
             text-decoration: underline;
         }
-        .toast-message {
+        /* Стили для приветственного сообщения (жёлтый фон, чёрный текст) */
+        .welcome-toast {
             position: fixed;
             top: 80px;
-            right: 15px;
-            background: rgba(20, 20, 20, 0.95);
-            border-left: 5px solid #FFD700;
+            right: 20px;
+            background: #FFD700 !important;
+            color: #000000 !important;
             padding: 15px 20px;
             border-radius: 40px;
-            z-index: 9997;
+            z-index: 10003;
             animation: slideIn 0.4s ease;
-            font-size: 0.9rem;
+            font-weight: 700;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            font-size: 1rem;
         }
         @keyframes slideIn {
             from {
@@ -1849,19 +1852,34 @@
             }
 
             function showToast(message, type = 'info') {
+                // Удаляем старые тосты
+                document.querySelectorAll('.welcome-toast, [style*="position: fixed"][style*="top: 80px"]').forEach(el => {
+                    if (el.classList.contains('welcome-toast') || el.style.background === 'rgb(255, 215, 0)') {
+                        el.remove();
+                    }
+                });
+
                 const toast = document.createElement('div');
-                const colors = { 'success': '#2ecc71', 'error': '#e74c3c', 'info': '#FFD700' };
-                toast.style.cssText = `
-                    position: fixed; top: 80px; right: 20px;
-                    background: ${colors[type] || '#FFD700'};
-                    color: ${type === 'info' ? '#0a0a0a' : 'white'};
-                    padding: 15px 20px; border-radius: 40px; z-index: 10003;
-                    animation: slideIn 0.4s ease; font-weight: 600;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-                `;
+                
+                // Для приветственных сообщений используем жёлтый фон и чёрный текст
+                if (type === 'welcome') {
+                    toast.className = 'welcome-toast';
+                } else {
+                    const colors = { 'success': '#2ecc71', 'error': '#e74c3c', 'info': '#FFD700' };
+                    toast.style.cssText = `
+                        position: fixed; top: 80px; right: 20px;
+                        background: ${colors[type] || '#FFD700'};
+                        color: ${type === 'info' ? '#0a0a0a' : 'white'};
+                        padding: 15px 20px; border-radius: 40px; z-index: 10003;
+                        animation: slideIn 0.4s ease; font-weight: 600;
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                    `;
+                }
                 toast.textContent = message;
                 document.body.appendChild(toast);
-                setTimeout(() => toast.remove(), 3000);
+                setTimeout(() => {
+                    if (toast.parentNode) toast.remove();
+                }, 4000);
             }
 
             function showError(el, msg) {
@@ -1872,7 +1890,7 @@
             }
 
             function showWelcomeMessage(name) {
-                showToast(`✨ Добро пожаловать, ${escapeHtml(name)}!`, 'success');
+                showToast(`✨ Добро пожаловать, ${escapeHtml(name)}!`, 'welcome');
             }
 
             function updateUIForAuth() {
