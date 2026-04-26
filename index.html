@@ -1646,13 +1646,11 @@
         (function() {
             "use strict";
 
-            // Проверка загрузки CryptoJS
             if (typeof CryptoJS === 'undefined') {
                 document.body.innerHTML = '<div style="color:#FFD700; text-align:center; padding:50px; font-size:1.5rem;">⚠️ Ошибка: CryptoJS не загружен! Проверьте подключение к интернету.</div>';
                 return;
             }
 
-            // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
             let MASTER_KEY = null;
             let users = {};
             let currentUser = null;
@@ -1674,12 +1672,9 @@
             let requireCaptcha = false;
             let isStackExpanded = false;
             let selectedPrivateChat = null;
-            let isTabActive = true;
 
             const BASE_SALT = "BK_SECURE_SALT_V2_2026";
-            const SALT = "BK_BANK_STATIC_SALT_2024";
 
-            // ==================== РАБОТА С ХРАНИЛИЩЕМ ====================
             const _realStorage = window.localStorage;
 
             function realGetItem(key) { return _realStorage.getItem(key); }
@@ -1721,10 +1716,7 @@
             }
 
             function secureSetItem(key, value) {
-                if (!MASTER_KEY) {
-                    console.warn('MASTER_KEY not set, cannot encrypt');
-                    return;
-                }
+                if (!MASTER_KEY) return;
                 try {
                     const data = JSON.stringify(value);
                     const encrypted = CryptoJS.AES.encrypt(data, MASTER_KEY).toString();
@@ -1754,7 +1746,6 @@
                 }
             }
 
-            // ==================== ФУНКЦИИ БАЛАНСА ====================
             function updateBalance(user, amount, operation) {
                 if (!currentUser) return false;
                 if (user !== currentUser && operation !== 'admin_mint' && operation !== 'rollback') return false;
@@ -1771,7 +1762,6 @@
                 if (!currentUser || user !== currentUser) return false;
                 const available = (bktokBalances[user] || 0) - (frozenBalances[user] || 0);
                 if (available < amount) return false;
-
                 frozenBalances[user] = (frozenBalances[user] || 0) + amount;
                 if (MASTER_KEY) secureSetItem('frozenBalances', frozenBalances);
                 return true;
@@ -1788,7 +1778,6 @@
                 return (bktokBalances[user] || 0) - (frozenBalances[user] || 0);
             }
 
-            // ==================== ТОРГОВЛЯ ====================
             function matchOrders() {
                 let iterationCount = 0;
                 const MAX_ITERATIONS = 1000;
@@ -1802,7 +1791,6 @@
 
                 while (i < bktokOrders.buy.length && j < bktokOrders.sell.length && iterationCount < MAX_ITERATIONS) {
                     iterationCount++;
-
                     const buy = bktokOrders.buy[i];
                     const sell = bktokOrders.sell[j];
 
@@ -1814,24 +1802,14 @@
                         const buyerAvailable = getAvailableBalance(buy.user);
                         const sellerAvailable = getAvailableBalance(sell.user);
 
-                        if (buyerAvailable < amount * price + fee) {
-                            console.warn('Недостаточно средств у покупателя', buy.user);
-                            i++;
-                            continue;
-                        }
-
-                        if (sellerAvailable < amount) {
-                            console.warn('Недостаточно BK у продавца', sell.user);
-                            j++;
-                            continue;
-                        }
+                        if (buyerAvailable < amount * price + fee) { i++; continue; }
+                        if (sellerAvailable < amount) { j++; continue; }
 
                         unfreezeBalance(buy.user, amount * price + fee);
                         unfreezeBalance(sell.user, amount);
 
                         bktokBalances[buy.user] = (bktokBalances[buy.user] || 0) - (amount * price + fee);
                         bktokBalances[buy.user] = (bktokBalances[buy.user] || 0) + amount;
-
                         bktokBalances[sell.user] = (bktokBalances[sell.user] || 0) - amount;
                         bktokBalances[sell.user] = (bktokBalances[sell.user] || 0) + (amount * price - fee);
 
@@ -1848,17 +1826,10 @@
                         buy.amount -= amount;
                         sell.amount -= amount;
 
-                        if (buy.amount <= 0.0001) {
-                            bktokOrders.buy.splice(i, 1);
-                        } else {
-                            i++;
-                        }
-
-                        if (sell.amount <= 0.0001) {
-                            bktokOrders.sell.splice(j, 1);
-                        } else {
-                            j++;
-                        }
+                        if (buy.amount <= 0.0001) bktokOrders.buy.splice(i, 1);
+                        else i++;
+                        if (sell.amount <= 0.0001) bktokOrders.sell.splice(j, 1);
+                        else j++;
                     } else if (buy.price < sell.price) {
                         i++;
                     } else {
@@ -1874,41 +1845,23 @@
                         secureSetItem('frozenBalances', frozenBalances);
                     }
                 }
-
-                if (MASTER_KEY) {
-                    secureSetItem('bktokOrders', bktokOrders);
-                }
+                if (MASTER_KEY) secureSetItem('bktokOrders', bktokOrders);
             }
 
-            // ==================== UI ФУНКЦИИ ====================
             function showToast(message, type = 'info') {
                 const toast = document.createElement('div');
-                const colors = {
-                    'success': '#2ecc71',
-                    'error': '#e74c3c',
-                    'info': '#FFD700'
-                };
-                const textColor = type === 'info' ? '#0a0a0a' : 'white';
-
+                const colors = { 'success': '#2ecc71', 'error': '#e74c3c', 'info': '#FFD700' };
                 toast.style.cssText = `
-                    position: fixed;
-                    top: 80px;
-                    right: 20px;
+                    position: fixed; top: 80px; right: 20px;
                     background: ${colors[type] || '#FFD700'};
-                    color: ${textColor};
-                    padding: 15px 20px;
-                    border-radius: 40px;
-                    z-index: 10003;
-                    animation: slideIn 0.4s ease;
-                    font-weight: 600;
+                    color: ${type === 'info' ? '#0a0a0a' : 'white'};
+                    padding: 15px 20px; border-radius: 40px; z-index: 10003;
+                    animation: slideIn 0.4s ease; font-weight: 600;
                     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
                 `;
                 toast.textContent = message;
                 document.body.appendChild(toast);
-                setTimeout(() => {
-                    toast.style.animation = 'slideOut 0.4s ease';
-                    setTimeout(() => toast.remove(), 400);
-                }, 3000);
+                setTimeout(() => toast.remove(), 3000);
             }
 
             function showError(el, msg) {
@@ -1918,33 +1871,8 @@
                 setTimeout(() => el.classList.add('hidden'), 3000);
             }
 
-            function showMainContent() {
-                document.querySelector('.main-container').classList.remove('hidden');
-                document.querySelector('header').classList.remove('hidden');
-                // По умолчанию показываем главную
-                if (currentUser) {
-                    toggleSection('about');
-                }
-            }
-
             function showWelcomeMessage(name) {
-                const toast = document.createElement('div');
-                toast.style.cssText = `
-                    position: fixed;
-                    top: 80px;
-                    right: 20px;
-                    background: #FFD700;
-                    color: #0a0a0a;
-                    padding: 15px 20px;
-                    border-radius: 40px;
-                    z-index: 10003;
-                    animation: slideIn 0.4s ease;
-                    font-weight: 600;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-                `;
-                toast.innerHTML = `<strong>✨ Добро пожаловать, ${escapeHtml(name)}!</strong>`;
-                document.body.appendChild(toast);
-                setTimeout(() => toast.remove(), 3000);
+                showToast(`✨ Добро пожаловать, ${escapeHtml(name)}!`, 'success');
             }
 
             function updateUIForAuth() {
@@ -1954,41 +1882,31 @@
                 if (currentUser) {
                     authBtns.classList.add('hidden');
                     profileBtn.classList.remove('hidden');
-
                     const user = users[currentUser];
                     document.getElementById('header-username').textContent = user.name || currentUser;
-                    if (user.avatar) {
-                        document.getElementById('header-avatar').src = user.avatar;
-                    }
-
+                    if (user.avatar) document.getElementById('header-avatar').src = user.avatar;
                     ['bktok', 'tasks', 'cases', 'chats'].forEach(section => {
-                        const guestMsg = document.getElementById(section + '-guest-message');
-                        const content = document.getElementById(section + '-content');
-                        if (guestMsg) guestMsg.classList.add('hidden');
-                        if (content) content.classList.remove('hidden');
+                        const gm = document.getElementById(section + '-guest-message');
+                        const ct = document.getElementById(section + '-content');
+                        if (gm) gm.classList.add('hidden');
+                        if (ct) ct.classList.remove('hidden');
                     });
                 } else {
                     authBtns.classList.remove('hidden');
                     profileBtn.classList.add('hidden');
-
                     ['bktok', 'tasks', 'cases', 'chats'].forEach(section => {
-                        const guestMsg = document.getElementById(section + '-guest-message');
-                        const content = document.getElementById(section + '-content');
-                        if (guestMsg) guestMsg.classList.remove('hidden');
-                        if (content) content.classList.add('hidden');
+                        const gm = document.getElementById(section + '-guest-message');
+                        const ct = document.getElementById(section + '-content');
+                        if (gm) gm.classList.remove('hidden');
+                        if (ct) ct.classList.add('hidden');
                     });
                 }
             }
 
             function saveSession() {
                 if (currentUser && MASTER_KEY) {
-                    const sessionData = {
-                        username: currentUser,
-                        timestamp: Date.now()
-                    };
-                    realSetItem('currentSession', JSON.stringify(sessionData));
+                    realSetItem('currentSession', JSON.stringify({ username: currentUser, timestamp: Date.now() }));
                     realSetItem('MASTER_KEY', MASTER_KEY);
-                    console.log('✅ Сессия сохранена для', currentUser);
                 }
             }
 
@@ -1999,7 +1917,6 @@
             function showModalOverlay() {
                 const existing = document.getElementById('modal-overlay');
                 if (existing) existing.remove();
-
                 const overlay = document.createElement('div');
                 overlay.className = 'modal-overlay';
                 overlay.id = 'modal-overlay';
@@ -2010,22 +1927,18 @@
                 document.body.appendChild(overlay);
             }
 
-            // ==================== НАВИГАЦИЯ ====================
             function toggleSection(section) {
-                // Скрываем все секции
                 ['about', 'services', 'cards', 'bktok', 'tasks', 'cases', 'support', 'chats', 'profile',
                     'public-profile'
                 ].forEach(id => {
                     document.getElementById(id + '-section')?.classList.add('hidden');
                 });
 
-                // Останавливаем обновление графика, если уходим с биржи
                 if (section !== 'bktok' && chartInterval) {
                     clearInterval(chartInterval);
                     chartInterval = null;
                 }
 
-                // Показываем нужную секцию
                 switch (section) {
                     case 'about':
                         document.getElementById('about-section')?.classList.remove('hidden');
@@ -2038,27 +1951,18 @@
                         renderCardsStack();
                         break;
                     case 'bktok':
-                        if (!currentUser) {
-                            showLoginForm();
-                            return;
-                        }
+                        if (!currentUser) { showLoginForm(); return; }
                         document.getElementById('bktok-section')?.classList.remove('hidden');
                         loadBKtok();
                         startChartUpdates();
                         break;
                     case 'tasks':
-                        if (!currentUser) {
-                            showLoginForm();
-                            return;
-                        }
+                        if (!currentUser) { showLoginForm(); return; }
                         document.getElementById('tasks-section')?.classList.remove('hidden');
                         renderTasks();
                         break;
                     case 'cases':
-                        if (!currentUser) {
-                            showLoginForm();
-                            return;
-                        }
+                        if (!currentUser) { showLoginForm(); return; }
                         document.getElementById('cases-section')?.classList.remove('hidden');
                         renderCases();
                         break;
@@ -2067,18 +1971,12 @@
                         renderAISupport();
                         break;
                     case 'chats':
-                        if (!currentUser) {
-                            showLoginForm();
-                            return;
-                        }
+                        if (!currentUser) { showLoginForm(); return; }
                         document.getElementById('chats-section')?.classList.remove('hidden');
                         renderPrivateChats();
                         break;
                     case 'profile':
-                        if (!currentUser) {
-                            showLoginForm();
-                            return;
-                        }
+                        if (!currentUser) { showLoginForm(); return; }
                         showProfile();
                         break;
                 }
@@ -2089,7 +1987,6 @@
                 realSetItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
             }
 
-            // ==================== КАРТЫ ====================
             const cardList = [
                 { img: 'png/2025-01-30_15-13-31-Photoroom.png' },
                 { img: 'png/2025-01-30_15-58-26-Photoroom.png' },
@@ -2103,13 +2000,10 @@
             function renderCardsStack() {
                 const container = document.getElementById('cards-stack-container');
                 if (!container) return;
-
                 isStackExpanded = false;
                 container.innerHTML = cardList.map((card, i) => `
                     <div class="stack-card" style="
-                        position: absolute;
-                        width: 220px;
-                        cursor: pointer;
+                        position: absolute; width: 220px; cursor: pointer;
                         filter: drop-shadow(0 15px 30px rgba(0,0,0,0.6));
                         transform: rotate(${[-8,-4,0,4,8,12,16][i]}deg) translateX(${[-25,-15,-5,0,5,15,25][i]}px);
                         z-index: ${i+1};
@@ -2123,7 +2017,6 @@
                 e.stopPropagation();
                 const container = document.getElementById('cards-stack-container');
                 const cards = container.querySelectorAll('.stack-card');
-
                 if (!isStackExpanded) {
                     cards.forEach((card, i) => {
                         card.style.transform =
@@ -2141,15 +2034,12 @@
                 }
             }
 
-            // ==================== БИРЖА ====================
             function loadBKtok() {
                 if (!currentUser) return;
-
                 if (bktokBalances[currentUser] === undefined) {
                     bktokBalances[currentUser] = 10;
                     if (MASTER_KEY) secureSetItem('bktokBalances', bktokBalances);
                 }
-
                 updateBalanceDisplay();
                 updateOrderBook();
                 renderChart();
@@ -2158,29 +2048,19 @@
 
             function updateBalanceDisplay() {
                 if (!currentUser) return;
-
+                const display = document.getElementById('token-balance-display');
+                if (!display) return;
                 const totalBK = (bktokBalances[currentUser] || 0).toFixed(2);
                 const frozenBK = (frozenBalances[currentUser] || 0).toFixed(2);
                 const availableBK = getAvailableBalance(currentUser).toFixed(2);
-
-                const display = document.getElementById('token-balance-display');
-                if (display) {
-                    display.innerHTML = `
-                        💰 ${totalBK} BK<br>
-                        <small style="font-size: 0.7rem; opacity: 0.7;">
-                            🔒 Заморожено: ${frozenBK} BK | ✅ Доступно: ${availableBK} BK
-                        </small>
-                    `;
-                }
+                display.innerHTML = `💰 ${totalBK} BK<br><small style="font-size:0.7rem;opacity:0.7;">🔒 Заморожено: ${frozenBK} BK | ✅ Доступно: ${availableBK} BK</small>`;
             }
 
             function startChartUpdates() {
                 if (chartInterval) clearInterval(chartInterval);
                 chartInterval = setInterval(() => {
-                    if (currentUser && !document.getElementById('bktok-section')?.classList.contains(
-                            'hidden')) {
+                    if (currentUser && !document.getElementById('bktok-section')?.classList.contains('hidden'))
                         renderChart();
-                    }
                 }, 3000);
             }
 
@@ -2201,22 +2081,22 @@
                 trades = trades.filter(t => new Date(t.time).getTime() > cutoff);
 
                 if (trades.length === 0) {
-                    container.innerHTML = '<p style="text-align:center; padding:30px; color:#888;">Нет данных</p>';
-                    document.getElementById('chart-open').textContent = '0';
-                    document.getElementById('chart-high').textContent = '0';
-                    document.getElementById('chart-low').textContent = '0';
-                    document.getElementById('chart-change').textContent = '0%';
+                    container.innerHTML = '<p style="text-align:center;padding:30px;color:#888;">Нет данных</p>';
+                    ['chart-open', 'chart-high', 'chart-low'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.textContent = '0';
+                    });
+                    const changeEl = document.getElementById('chart-change');
+                    if (changeEl) changeEl.textContent = '0%';
                     return;
                 }
 
                 const bars = [];
                 const barCount = Math.min(12, trades.length);
                 const step = Math.floor(trades.length / barCount) || 1;
-
                 for (let i = 0; i < barCount; i++) {
                     const slice = trades.slice(i * step, (i + 1) * step);
                     if (!slice.length) continue;
-
                     const prices = slice.map(t => t.price);
                     bars.push({
                         open: prices[prices.length - 1],
@@ -2233,15 +2113,7 @@
 
                 container.innerHTML = bars.map(b => {
                     const height = ((b.close - min) / range) * 120 + 40;
-                    return `
-                        <div class="chart-bar-wrapper">
-                            <div class="chart-bar ${b.isRed ? 'red' : ''}" 
-                                 style="height:${height}px;" 
-                                 title="O:${b.open.toFixed(2)} H:${b.high.toFixed(2)} L:${b.low.toFixed(2)} C:${b.close.toFixed(2)}">
-                            </div>
-                            <div class="chart-bar-value">${b.close.toFixed(2)}</div>
-                        </div>
-                    `;
+                    return `<div class="chart-bar-wrapper"><div class="chart-bar ${b.isRed ? 'red' : ''}" style="height:${height}px;" title="O:${b.open.toFixed(2)} H:${b.high.toFixed(2)} L:${b.low.toFixed(2)} C:${b.close.toFixed(2)}"></div><div class="chart-bar-value">${b.close.toFixed(2)}</div></div>`;
                 }).join('');
 
                 const first = bars[0]?.open || 0;
@@ -2252,145 +2124,94 @@
                 document.getElementById('chart-open').textContent = first.toFixed(2);
                 document.getElementById('chart-high').textContent = max.toFixed(2);
                 document.getElementById('chart-low').textContent = min.toFixed(2);
-
                 const changeEl = document.getElementById('chart-change');
-                changeEl.textContent = (change >= 0 ? '+' : '') + percent + '%';
-                changeEl.className = 'chart-stat-value ' + (change >= 0 ? 'positive' : 'negative');
+                if (changeEl) {
+                    changeEl.textContent = (change >= 0 ? '+' : '') + percent + '%';
+                    changeEl.className = 'chart-stat-value ' + (change >= 0 ? 'positive' : 'negative');
+                }
             }
 
             function updateOrderBook() {
-                let buyHtml = '';
-                let sellHtml = '';
-
+                let buyHtml = '',
+                    sellHtml = '';
                 const buyOrders = [...bktokOrders.buy].sort((a, b) => b.price - a.price);
                 const sellOrders = [...bktokOrders.sell].sort((a, b) => a.price - b.price);
 
                 buyOrders.slice(0, 8).forEach(o => {
-                    buyHtml += `
-                        <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid rgba(255,255,255,0.05);">
-                            <span>${o.amount.toFixed(2)} BK</span>
-                            <span style="color:#4ade80;">${o.price.toFixed(2)} ₽</span>
-                        </div>
-                    `;
+                    buyHtml +=
+                        `<div style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid rgba(255,255,255,0.05);"><span>${o.amount.toFixed(2)} BK</span><span style="color:#4ade80;">${o.price.toFixed(2)} ₽</span></div>`;
                 });
-
                 sellOrders.slice(0, 8).forEach(o => {
-                    sellHtml += `
-                        <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid rgba(255,255,255,0.05);">
-                            <span>${o.amount.toFixed(2)} BK</span>
-                            <span style="color:#ff5e5e;">${o.price.toFixed(2)} ₽</span>
-                        </div>
-                    `;
+                    sellHtml +=
+                        `<div style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid rgba(255,255,255,0.05);"><span>${o.amount.toFixed(2)} BK</span><span style="color:#ff5e5e;">${o.price.toFixed(2)} ₽</span></div>`;
                 });
 
                 const buyContainer = document.getElementById('buy-orders');
                 const sellContainer = document.getElementById('sell-orders');
-                if (buyContainer) buyContainer.innerHTML = buyHtml || '<p style="color:#888; padding:10px;">Нет заявок</p>';
+                if (buyContainer) buyContainer.innerHTML = buyHtml ||
+                    '<p style="color:#888;padding:10px;">Нет заявок</p>';
                 if (sellContainer) sellContainer.innerHTML = sellHtml ||
-                    '<p style="color:#888; padding:10px;">Нет заявок</p>';
+                    '<p style="color:#888;padding:10px;">Нет заявок</p>';
 
                 const myOrders = [...bktokOrders.buy, ...bktokOrders.sell].filter(o => o.user === currentUser);
                 const myOrdersContainer = document.getElementById('my-orders');
                 if (myOrdersContainer) {
-                    myOrdersContainer.innerHTML = myOrders.length ?
-                        myOrders.map(o => `
-                            <div style="display:flex; justify-content:space-between; padding:8px; background:rgba(255,215,0,0.05); margin-bottom:5px; border-radius:8px;">
-                                <span>${o.side === 'buy' ? '🟢 Покупка' : '🔴 Продажа'} ${o.amount.toFixed(2)} BK @ ${o.price.toFixed(2)} ₽</span>
-                                <button onclick="cancelOrder('${o.id}')" style="background:transparent; border:none; color:#ff5e5e; cursor:pointer; font-size:1rem;">✕</button>
-                            </div>
-                        `).join('') :
-                        '<p style="color:#888;">Нет активных ордеров</p>';
+                    myOrdersContainer.innerHTML = myOrders.length ? myOrders.map(o => `
+                        <div style="display:flex;justify-content:space-between;padding:8px;background:rgba(255,215,0,0.05);margin-bottom:5px;border-radius:8px;">
+                            <span>${o.side==='buy'?'🟢 Покупка':'🔴 Продажа'} ${o.amount.toFixed(2)} BK @ ${o.price.toFixed(2)} ₽</span>
+                            <button onclick="cancelOrder('${o.id}')" style="background:transparent;border:none;color:#ff5e5e;cursor:pointer;font-size:1rem;">✕</button>
+                        </div>
+                    `).join('') : '<p style="color:#888;">Нет активных ордеров</p>';
                 }
             }
 
             function renderTradeHistory() {
                 const container = document.getElementById('trade-history');
                 if (!container) return;
-
-                const userTrades = bktokTrades
-                    .filter(t => t.buyer === currentUser || t.seller === currentUser)
-                    .slice(-10)
+                const userTrades = bktokTrades.filter(t => t.buyer === currentUser || t.seller === currentUser).slice(-10)
                     .reverse();
-
-                container.innerHTML = userTrades.length ?
-                    userTrades.map(t => `
-                        <div style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.05);">
-                            <span style="color:${t.buyer === currentUser ? '#4ade80' : '#ff5e5e'};">
-                                ${t.buyer === currentUser ? 'Покупка' : 'Продажа'}
-                            </span> 
-                            ${t.amount.toFixed(2)} BK @ ${t.price.toFixed(2)} ₽ 
-                            <small>${new Date(t.time).toLocaleTimeString()}</small>
-                        </div>
-                    `).join('') :
-                    '<p style="color:#888;">Нет сделок</p>';
+                container.innerHTML = userTrades.length ? userTrades.map(t => `
+                    <div style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <span style="color:${t.buyer===currentUser?'#4ade80':'#ff5e5e'};">${t.buyer===currentUser?'Покупка':'Продажа'}</span>
+                        ${t.amount.toFixed(2)} BK @ ${t.price.toFixed(2)} ₽
+                        <small>${new Date(t.time).toLocaleTimeString()}</small>
+                    </div>
+                `).join('') : '<p style="color:#888;">Нет сделок</p>';
             }
 
-            // ==================== ОРДЕРА ====================
             function createOrder(side) {
-                if (!currentUser) {
-                    showToast('Войдите в систему', 'error');
-                    return;
-                }
-
+                if (!currentUser) { showToast('Войдите в систему', 'error'); return; }
                 const priceInput = document.getElementById('order-price');
                 const amountInput = document.getElementById('order-amount');
-
-                if (!priceInput || !amountInput) {
-                    showToast('Ошибка интерфейса', 'error');
-                    return;
-                }
+                if (!priceInput || !amountInput) { showToast('Ошибка интерфейса', 'error'); return; }
 
                 const price = parseFloat(priceInput.value);
                 const amount = parseFloat(amountInput.value);
-
-                if (!price || !amount || price <= 0 || amount <= 0) {
-                    showToast('Введите корректные цену и количество', 'error');
-                    return;
-                }
+                if (!price || !amount || price <= 0 || amount <= 0) { showToast(
+                        'Введите корректные цену и количество', 'error'); return; }
 
                 const fee = amount * price * 0.001;
                 const totalCost = amount * price + fee;
                 const available = getAvailableBalance(currentUser);
 
                 if (side === 'buy') {
-                    if (available < totalCost) {
-                        showToast(`Недостаточно средств. Доступно: ${available.toFixed(2)} BK`, 'error');
-                        return;
-                    }
-                    if (!freezeBalance(currentUser, totalCost)) {
-                        showToast('Ошибка заморозки средств', 'error');
-                        return;
-                    }
+                    if (available < totalCost) { showToast(
+                            `Недостаточно средств. Доступно: ${available.toFixed(2)} BK`, 'error'); return; }
+                    if (!freezeBalance(currentUser, totalCost)) { showToast('Ошибка заморозки средств',
+                        'error'); return; }
                 } else {
-                    if (available < amount) {
-                        showToast(`Недостаточно BK. Доступно: ${available.toFixed(2)} BK`, 'error');
-                        return;
-                    }
-                    if (!freezeBalance(currentUser, amount)) {
-                        showToast('Ошибка заморозки средств', 'error');
-                        return;
-                    }
+                    if (available < amount) { showToast(`Недостаточно BK. Доступно: ${available.toFixed(2)} BK`,
+                            'error'); return; }
+                    if (!freezeBalance(currentUser, amount)) { showToast('Ошибка заморозки средств', 'error'); return; }
                 }
 
                 const orderId = crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36)
                     .substr(2, 9);
-
-                const order = {
-                    id: orderId,
-                    user: currentUser,
-                    side: side,
-                    price: price,
-                    amount: amount,
-                    created: Date.now()
-                };
-
-                bktokOrders[side].push(order);
+                bktokOrders[side].push({ id: orderId, user: currentUser, side, price, amount, created: Date.now() });
                 if (MASTER_KEY) secureSetItem('bktokOrders', bktokOrders);
 
-                // Очищаем поля ввода
                 priceInput.value = '';
                 amountInput.value = '';
-
                 matchOrders();
                 loadBKtok();
                 showToast('✅ Ордер создан', 'success');
@@ -2398,28 +2219,22 @@
 
             function cancelOrder(id) {
                 let order = bktokOrders.buy.find(o => o.id == id) || bktokOrders.sell.find(o => o.id == id);
-                if (!order || order.user !== currentUser) {
-                    showToast('Ордер не найден или не ваш', 'error');
-                    return;
-                }
+                if (!order || order.user !== currentUser) { showToast('Ордер не найден или не ваш', 'error'); return; }
 
                 if (order.side === 'buy') {
                     const fee = order.amount * order.price * 0.001;
-                    const totalCost = order.amount * order.price + fee;
-                    unfreezeBalance(currentUser, totalCost);
+                    unfreezeBalance(currentUser, order.amount * order.price + fee);
                 } else {
                     unfreezeBalance(currentUser, order.amount);
                 }
 
                 bktokOrders.buy = bktokOrders.buy.filter(o => o.id != id);
                 bktokOrders.sell = bktokOrders.sell.filter(o => o.id != id);
-
                 if (MASTER_KEY) secureSetItem('bktokOrders', bktokOrders);
                 loadBKtok();
                 showToast('✅ Ордер отменен, средства разморожены', 'success');
             }
 
-            // ==================== ЗАДАНИЯ ====================
             const tasks = [
                 { id: 'daily', name: 'Ежедневный вход', reward: 10, cooldown: 86400000 },
                 { id: 'profile', name: 'Заполнить профиль', reward: 50, once: true },
@@ -2430,52 +2245,34 @@
             function renderTasks() {
                 if (!currentUser) return;
                 if (!userTasks[currentUser]) userTasks[currentUser] = {};
-
                 const container = document.getElementById('tasks-container');
                 if (!container) return;
-
                 container.innerHTML = tasks.map(task => {
                     const completed = userTasks[currentUser][task.id];
                     const canComplete = !completed || (task.cooldown && Date.now() - completed > task
-                        .cooldown);
-
-                    return `
-                        <div class="task-item ${!canComplete ? 'completed' : ''}" ${canComplete ? `onclick="completeTask('${task.id}')"` : ''}>
-                            <strong>${escapeHtml(task.name)}</strong>
-                            <div style="color:#FFD700; margin-top:8px;">+${task.reward} BK</div>
-                        </div>
-                    `;
+                    .cooldown);
+                    return `<div class="task-item ${!canComplete?'completed':''}" ${canComplete?`onclick="completeTask('${task.id}')"`:''}><strong>${escapeHtml(task.name)}</strong><div style="color:#FFD700;margin-top:8px;">+${task.reward} BK</div></div>`;
                 }).join('');
             }
 
             function completeTask(taskId) {
                 const task = tasks.find(t => t.id === taskId);
                 if (!task) return;
-
                 if (!userTasks[currentUser]) userTasks[currentUser] = {};
                 const completed = userTasks[currentUser][taskId];
-
                 if (completed) {
-                    if (task.once) {
-                        showToast('Это задание можно выполнить только один раз', 'error');
-                        return;
-                    }
-                    if (task.cooldown && Date.now() - completed < task.cooldown) {
-                        showToast('Задание еще на перезарядке', 'error');
-                        return;
-                    }
+                    if (task.once) { showToast('Это задание можно выполнить только один раз', 'error'); return; }
+                    if (task.cooldown && Date.now() - completed < task.cooldown) { showToast(
+                            'Задание еще на перезарядке', 'error'); return; }
                 }
-
                 updateBalance(currentUser, task.reward, 'task');
                 userTasks[currentUser][taskId] = Date.now();
-
                 if (MASTER_KEY) secureSetItem('userTasks', userTasks);
                 renderTasks();
                 loadBKtok();
                 showToast(`✅ +${task.reward} BK!`, 'success');
             }
 
-            // ==================== КЕЙСЫ ====================
             const cases = [
                 { name: 'Обычный', price: 5, rewards: [1, 2, 3, 5, 8, 10] },
                 { name: 'Редкий', price: 20, rewards: [5, 10, 15, 25, 50, 100] },
@@ -2484,24 +2281,18 @@
 
             function renderCases() {
                 if (!currentUser) return;
-
                 const container = document.getElementById('cases-container');
                 if (!container) return;
-
                 container.innerHTML = cases.map(cs => `
                     <div class="case-item" onclick="openCase('${cs.name}', ${cs.price}, ${JSON.stringify(cs.rewards)})">
                         <h4>${escapeHtml(cs.name)}</h4>
-                        <div style="color:#FFD700; margin-top:10px;">${cs.price} BK</div>
+                        <div style="color:#FFD700;margin-top:10px;">${cs.price} BK</div>
                     </div>
                 `).join('');
             }
 
             function openCase(name, price, rewards) {
-                if (getAvailableBalance(currentUser) < price) {
-                    showToast('Недостаточно BK!', 'error');
-                    return;
-                }
-
+                if (getAvailableBalance(currentUser) < price) { showToast('Недостаточно BK!', 'error'); return; }
                 updateBalance(currentUser, -price, 'case');
                 const win = rewards[Math.floor(Math.random() * rewards.length)];
                 updateBalance(currentUser, win, 'case_win');
@@ -2510,47 +2301,31 @@
                 renderCases();
             }
 
-            // ==================== AI ПОДДЕРЖКА ====================
             function renderAISupport() {
                 const container = document.getElementById('support-container');
                 if (!container) return;
-
                 if (!currentUser) {
-                    container.innerHTML = '<p style="text-align:center; padding:20px;">🔒 Войдите, чтобы задать вопрос</p>';
+                    container.innerHTML = '<p style="text-align:center;padding:20px;">🔒 Войдите, чтобы задать вопрос</p>';
                     return;
                 }
-
                 if (!allSupportChats[currentUser]) {
-                    allSupportChats[currentUser] = [{
-                        from: 'ai',
-                        text: '👋 Здравствуйте! Я нейросеть BK-Bank. Могу помочь с балансом, картами, токенами.',
-                        time: new Date().toISOString()
-                    }];
+                    allSupportChats[currentUser] = [{ from: 'ai', text: '👋 Здравствуйте! Я нейросеть BK-Bank. Могу помочь с балансом, картами, токенами.', time: new Date().toISOString() }];
                 }
-
-                container.innerHTML = `
-                    <div class="chat-messages" id="ai-chat-messages"></div>
-                    <div class="chat-input-area">
-                        <input id="ai-chat-input" class="chat-input" placeholder="Задайте вопрос...">
-                        <button class="chat-send-btn" onclick="sendAIMessage()">Отправить</button>
-                    </div>
-                `;
-
+                container.innerHTML =
+                    `<div class="chat-messages" id="ai-chat-messages"></div><div class="chat-input-area"><input id="ai-chat-input" class="chat-input" placeholder="Задайте вопрос..."><button class="chat-send-btn" onclick="sendAIMessage()">Отправить</button></div>`;
                 loadAIMessages();
             }
 
             function loadAIMessages() {
                 const container = document.getElementById('ai-chat-messages');
                 if (!container || !allSupportChats[currentUser]) return;
-
                 container.innerHTML = allSupportChats[currentUser].map(msg => `
-                    <div class="chat-message ${msg.from === 'ai' ? 'support' : 'client'}">
-                        <strong>${msg.from === 'ai' ? '🤖 BK-AI' : '👤 Вы'}:</strong><br>
+                    <div class="chat-message ${msg.from==='ai'?'support':'client'}">
+                        <strong>${msg.from==='ai'?'🤖 BK-AI':'👤 Вы'}:</strong><br>
                         ${escapeHtml(msg.text)}
-                        <small>${new Date(msg.time).toLocaleTimeString().slice(0, 5)}</small>
+                        <small>${new Date(msg.time).toLocaleTimeString().slice(0,5)}</small>
                     </div>
                 `).join('');
-
                 container.scrollTop = container.scrollHeight;
             }
 
@@ -2559,190 +2334,117 @@
                 if (!input) return;
                 const text = input.value.trim();
                 if (!text) return;
-
-                if (!allSupportChats[currentUser]) {
-                    allSupportChats[currentUser] = [];
-                }
-
-                allSupportChats[currentUser].push({
-                    from: currentUser,
-                    text: text,
-                    time: new Date().toISOString()
-                });
-
+                if (!allSupportChats[currentUser]) allSupportChats[currentUser] = [];
+                allSupportChats[currentUser].push({ from: currentUser, text, time: new Date().toISOString() });
                 if (MASTER_KEY) secureSetItem('allSupportChats', allSupportChats);
                 input.value = '';
                 loadAIMessages();
 
-                // Имитация ответа AI
                 setTimeout(() => {
                     let response = '🤔 Я могу помочь с балансом, картами, токенами или откатом сделок.';
-
-                    if (text.toLowerCase().includes('баланс')) {
-                        const bal = bktokBalances[currentUser]?.toFixed(2) || '0';
-                        response = `💰 Ваш баланс: ${bal} BK.`;
-                    } else if (text.toLowerCase().includes('привет') || text.toLowerCase().includes('здравств')) {
+                    if (text.toLowerCase().includes('баланс')) response =
+                        `💰 Ваш баланс: ${(bktokBalances[currentUser]||0).toFixed(2)} BK.`;
+                    else if (text.toLowerCase().includes('привет') || text.toLowerCase().includes('здравств'))
                         response = '👋 Здравствуйте! Чем могу помочь?';
-                    } else if (text.toLowerCase().includes('спасиб')) {
-                        response = '😊 Всегда пожалуйста! Обращайтесь еще.';
-                    } else if (text.toLowerCase().includes('карт')) {
-                        response = '💳 У нас есть эксклюзивные карты в разделе "Карты". Каждая карта — это артефакт!';
-                    }
-
-                    allSupportChats[currentUser].push({
-                        from: 'ai',
-                        text: response,
-                        time: new Date().toISOString()
-                    });
-
+                    allSupportChats[currentUser].push({ from: 'ai', text: response, time: new Date().toISOString() });
                     if (MASTER_KEY) secureSetItem('allSupportChats', allSupportChats);
                     loadAIMessages();
                 }, 800);
             }
 
-            // ==================== ЧАТЫ ====================
             function renderPrivateChats() {
                 const container = document.getElementById('chats-container');
                 if (!container) return;
-
                 const myChats = Object.keys(privateChats).filter(id => id.includes(currentUser));
-
-                let html = `
-                    <div class="support-panel">
-                        <div class="users-list">
-                            <h4>Чаты</h4>
-                            <button class="gold-button" onclick="startNewChat()" style="margin-bottom:10px;">+ Новый чат</button>
-                `;
-
+                let html =
+                    `<div class="support-panel"><div class="users-list"><h4>Чаты</h4><button class="gold-button" onclick="startNewChat()" style="margin-bottom:10px;">+ Новый чат</button>`;
                 myChats.forEach(id => {
                     const other = id.split('-').find(u => u !== currentUser);
-                    const activeClass = selectedPrivateChat === id ? ' active' : '';
                     html +=
-                        `<div class="user-item${activeClass}" onclick="openPrivateChat('${id}')"><strong>${escapeHtml(other)}</strong></div>`;
+                        `<div class="user-item${selectedPrivateChat===id?' active':''}" onclick="openPrivateChat('${id}')"><strong>${escapeHtml(other)}</strong></div>`;
                 });
-
                 html += `</div><div class="chat-area">`;
-
                 if (selectedPrivateChat) {
                     const other = selectedPrivateChat.split('-').find(u => u !== currentUser);
-                    html += `
-                        <h4>Чат с ${escapeHtml(other)}</h4>
-                        <div class="chat-messages" id="private-chat-messages"></div>
-                        <div class="chat-input-area">
-                            <input id="private-chat-input" class="chat-input" placeholder="Сообщение...">
-                            <button class="chat-send-btn" onclick="sendPrivateMessage()">Отправить</button>
-                        </div>
-                    `;
-                } else {
-                    html += `<p>Выберите чат</p>`;
-                }
-
+                    html +=
+                        `<h4>Чат с ${escapeHtml(other)}</h4><div class="chat-messages" id="private-chat-messages"></div><div class="chat-input-area"><input id="private-chat-input" class="chat-input" placeholder="Сообщение..."><button class="chat-send-btn" onclick="sendPrivateMessage()">Отправить</button></div>`;
+                } else { html += `<p>Выберите чат</p>`; }
                 html += `</div></div>`;
                 container.innerHTML = html;
-
                 if (selectedPrivateChat) loadPrivateChatMessages();
             }
 
             function loadPrivateChatMessages() {
                 const container = document.getElementById('private-chat-messages');
                 if (!container || !privateChats[selectedPrivateChat]) return;
-
                 container.innerHTML = (privateChats[selectedPrivateChat] || []).map(msg => `
-                    <div class="chat-message ${msg.from === currentUser ? 'client' : 'support'}">
+                    <div class="chat-message ${msg.from===currentUser?'client':'support'}">
                         <strong>${escapeHtml(msg.from)}:</strong><br>
                         ${escapeHtml(msg.text)}
-                        <small>${new Date(msg.time).toLocaleTimeString().slice(0, 5)}</small>
+                        <small>${new Date(msg.time).toLocaleTimeString().slice(0,5)}</small>
                     </div>
                 `).join('');
-
                 container.scrollTop = container.scrollHeight;
             }
 
             function startNewChat() {
                 const username = prompt('Никнейм собеседника:');
                 if (!username) return;
-                if (!users[username]) {
-                    alert('Пользователь не найден');
-                    return;
-                }
-                if (username === currentUser) {
-                    alert('Нельзя начать чат с самим собой');
-                    return;
-                }
-
+                if (!users[username]) { alert('Пользователь не найден'); return; }
+                if (username === currentUser) { alert('Нельзя начать чат с самим собой'); return; }
                 const chatId = [currentUser, username].sort().join('-');
                 if (!privateChats[chatId]) privateChats[chatId] = [];
-
                 if (MASTER_KEY) secureSetItem('privateChats', privateChats);
                 selectedPrivateChat = chatId;
                 renderPrivateChats();
             }
 
-            function openPrivateChat(chatId) {
-                selectedPrivateChat = chatId;
-                renderPrivateChats();
-            }
+            function openPrivateChat(chatId) { selectedPrivateChat = chatId;
+                renderPrivateChats(); }
 
             function sendPrivateMessage() {
                 const input = document.getElementById('private-chat-input');
                 if (!input) return;
                 const text = input.value.trim();
                 if (!text || !selectedPrivateChat) return;
-
-                if (!privateChats[selectedPrivateChat]) {
-                    privateChats[selectedPrivateChat] = [];
-                }
-
-                privateChats[selectedPrivateChat].push({
-                    from: currentUser,
-                    text: text,
-                    time: new Date().toISOString()
-                });
-
+                if (!privateChats[selectedPrivateChat]) privateChats[selectedPrivateChat] = [];
+                privateChats[selectedPrivateChat].push({ from: currentUser, text, time: new Date().toISOString() });
                 if (MASTER_KEY) secureSetItem('privateChats', privateChats);
                 input.value = '';
                 loadPrivateChatMessages();
             }
 
-            // ==================== ПРОФИЛЬ ====================
             function showProfile() {
                 if (!currentUser) return;
-
                 const user = users[currentUser];
                 const container = document.getElementById('profile-section');
-
                 container.innerHTML = `
-                    <h2>Личный кабинет</h2>
-                    <div class="divider"></div>
+                    <h2>Личный кабинет</h2><div class="divider"></div>
                     <div class="profile-header">
-                        <img src="${user.avatar || 'png/2025-01-30_17-50-13-Photoroom.png'}" class="profile-avatar" onclick="document.getElementById('avatarInput').click()" alt="Аватар">
+                        <img src="${user.avatar||'png/2025-01-30_17-50-13-Photoroom.png'}" class="profile-avatar" onclick="document.getElementById('avatarInput').click()" alt="Аватар">
                         <input type="file" id="avatarInput" accept="image/*" style="display:none;" onchange="uploadAvatar(event)">
-                        <div>
-                            <strong style="font-size:1.3rem;">${escapeHtml(user.name)}</strong><br>
-                            @${escapeHtml(currentUser)}
-                        </div>
-                        <div style="display:flex; gap:8px; margin-left:auto;">
-                            <button style="background:transparent; border:1.5px solid #FFD700; color:#FFD700; padding:10px 20px; border-radius:30px; cursor:pointer; font-weight:600;" onclick="switchAccount()">🔄 Сменить</button>
-                            <button style="background:transparent; border:1.5px solid #FFD700; color:#FFD700; padding:10px 20px; border-radius:30px; cursor:pointer; font-weight:600;" onclick="logout()">🚪 Выйти</button>
+                        <div><strong style="font-size:1.3rem;">${escapeHtml(user.name)}</strong><br>@${escapeHtml(currentUser)}</div>
+                        <div style="display:flex;gap:8px;margin-left:auto;">
+                            <button style="background:transparent;border:1.5px solid #FFD700;color:#FFD700;padding:10px 20px;border-radius:30px;cursor:pointer;font-weight:600;" onclick="switchAccount()">🔄 Сменить</button>
+                            <button style="background:transparent;border:1.5px solid #FFD700;color:#FFD700;padding:10px 20px;border-radius:30px;cursor:pointer;font-weight:600;" onclick="logout()">🚪 Выйти</button>
                         </div>
                     </div>
                     <div class="profile-actions">
                         <button class="profile-action-btn" onclick="showEditProfileForm()">✏️ Редактировать профиль</button>
                         <button class="profile-action-btn" onclick="showBackupModal()">💾 Бекап / Восстановление</button>
-                        <button class="profile-action-btn" onclick="depositTestRubles()" style="color: #4ade80;">💰 Пополнить тестовые 1 000 BK</button>
-                        <button class="profile-action-btn" onclick="clearAllMyOrders()" style="color: #ff5e5e;">🔄 Сбросить все мои ордера</button>
-                        <button class="profile-action-btn" onclick="resetAccountToDefault()" style="color: #f39c12;">🔄 Начать заново (сброс)</button>
-                        <button class="profile-action-btn" onclick="destroyAccount()" style="color: #e74c3c;">⚠️ Удалить аккаунт</button>
+                        <button class="profile-action-btn" onclick="depositTestRubles()" style="color:#4ade80;">💰 Пополнить тестовые 1 000 BK</button>
+                        <button class="profile-action-btn" onclick="clearAllMyOrders()" style="color:#ff5e5e;">🔄 Сбросить все мои ордера</button>
+                        <button class="profile-action-btn" onclick="resetAccountToDefault()" style="color:#f39c12;">🔄 Начать заново (сброс)</button>
+                        <button class="profile-action-btn" onclick="destroyAccount()" style="color:#e74c3c;">⚠️ Удалить аккаунт</button>
                     </div>
                     <div class="profile-info">
-                        <p style="font-size:1rem;">📧 ${escapeHtml(user.email || 'Не указан')}</p>
-                        <p style="font-size:1rem;">📱 ${escapeHtml(user.phone || 'Не указан')}</p>
-                        <p style="font-size:1rem;" class="sensitive-data">💰 ${(bktokBalances[currentUser] || 0).toFixed(2)} BK</p>
-                        <p style="font-size:0.85rem; opacity:0.7;">🕒 Зарегистрирован: ${new Date(user.registrationDate).toLocaleDateString()}</p>
+                        <p>📧 ${escapeHtml(user.email||'Не указан')}</p>
+                        <p>📱 ${escapeHtml(user.phone||'Не указан')}</p>
+                        <p class="sensitive-data">💰 ${(bktokBalances[currentUser]||0).toFixed(2)} BK</p>
+                        <p style="font-size:0.85rem;opacity:0.7;">🕒 Зарегистрирован: ${new Date(user.registrationDate).toLocaleDateString()}</p>
                     </div>
                     <div class="account-switcher" id="account-switcher"></div>
                 `;
-
                 container.classList.remove('hidden');
                 renderAccountSwitcher();
             }
@@ -2750,44 +2452,25 @@
             function renderAccountSwitcher() {
                 const container = document.getElementById('account-switcher');
                 if (!container) return;
-
                 const accounts = Object.keys(savedAccounts).filter(u => u !== currentUser && users[u]);
                 if (accounts.length === 0) {
-                    container.innerHTML = '<p style="color:#888; text-align:center;">Нет сохраненных аккаунтов</p>';
+                    container.innerHTML = '<p style="color:#888;text-align:center;">Нет сохраненных аккаунтов</p>';
                     return;
                 }
-
                 container.innerHTML = `
-                    <h4 style="color:#FFD700; margin-bottom:15px;">Сохраненные аккаунты</h4>
-                    ${accounts.map(acc => {
-                        const user = users[acc];
-                        return `
-                            <div class="saved-account-item" onclick="switchToAccount('${acc}')">
-                                <img src="${user.avatar || 'png/2025-01-30_17-50-13-Photoroom.png'}" alt="${escapeHtml(user.name)}">
-                                <div class="saved-account-info">
-                                    <div class="saved-account-name">${escapeHtml(user.name)}</div>
-                                    <div class="saved-account-username">@${escapeHtml(acc)}</div>
-                                </div>
-                                <button class="remove-account-btn" onclick="event.stopPropagation(); removeSavedAccount('${acc}')">Удалить</button>
-                            </div>
-                        `;
+                    <h4 style="color:#FFD700;margin-bottom:15px;">Сохраненные аккаунты</h4>
+                    ${accounts.map(acc=>{
+                        const user=users[acc];
+                        return `<div class="saved-account-item" onclick="switchToAccount('${acc}')"><img src="${user.avatar||'png/2025-01-30_17-50-13-Photoroom.png'}" alt="${escapeHtml(user.name)}"><div class="saved-account-info"><div class="saved-account-name">${escapeHtml(user.name)}</div><div class="saved-account-username">@${escapeHtml(acc)}</div></div><button class="remove-account-btn" onclick="event.stopPropagation();removeSavedAccount('${acc}')">Удалить</button></div>`;
                     }).join('')}
                 `;
             }
 
             function switchToAccount(username) {
-                if (!users[username]) {
-                    showToast('Аккаунт не найден', 'error');
-                    return;
-                }
-
-                if (currentUser) {
-                    savedAccounts[currentUser] = true;
-                    realSetItem('savedAccounts', JSON.stringify(savedAccounts));
-                }
-
+                if (!users[username]) { showToast('Аккаунт не найден', 'error'); return; }
+                if (currentUser) { savedAccounts[currentUser] = true;
+                    realSetItem('savedAccounts', JSON.stringify(savedAccounts)); }
                 currentUser = username;
-                // Перезагружаем все данные
                 bktokBalances = secureGetItem('bktokBalances') || {};
                 frozenBalances = secureGetItem('frozenBalances') || {};
                 allSupportChats = secureGetItem('allSupportChats') || {};
@@ -2795,76 +2478,55 @@
                 bktokOrders = secureGetItem('bktokOrders') || { buy: [], sell: [] };
                 bktokTrades = secureGetItem('bktokTrades') || [];
                 userTasks = secureGetItem('userTasks') || {};
-
-                // Гарантируем начальный баланс
-                if (bktokBalances[currentUser] === undefined) {
-                    bktokBalances[currentUser] = 10;
-                    secureSetItem('bktokBalances', bktokBalances);
-                }
-
+                if (bktokBalances[currentUser] === undefined) { bktokBalances[currentUser] = 10;
+                    secureSetItem('bktokBalances', bktokBalances); }
                 saveSession();
                 updateUIForAuth();
                 showProfile();
                 showToast(`✅ Переключено на ${users[username].name}`, 'success');
             }
 
-            function removeSavedAccount(username) {
-                delete savedAccounts[username];
+            function removeSavedAccount(username) { delete savedAccounts[username];
                 realSetItem('savedAccounts', JSON.stringify(savedAccounts));
                 renderAccountSwitcher();
-                showToast('Аккаунт удален из сохраненных', 'info');
-            }
+                showToast('Аккаунт удален из сохраненных', 'info'); }
 
             function showEditProfileForm() {
                 const user = users[currentUser];
                 removeModals();
                 showModalOverlay();
-
                 const modal = document.createElement('div');
                 modal.className = 'modal-form';
                 modal.addEventListener('click', (e) => e.stopPropagation());
                 modal.innerHTML = `
                     <div class="form-title">Редактирование</div>
-                    <input id="editName" class="form-input" placeholder="Имя" value="${escapeHtml(user.name || '')}">
-                    <input id="editEmail" class="form-input" placeholder="Email" value="${escapeHtml(user.email || '')}">
-                    <input id="editPhone" class="form-input" placeholder="Телефон" value="${escapeHtml(user.phone || '')}">
+                    <input id="editName" class="form-input" placeholder="Имя" value="${escapeHtml(user.name||'')}">
+                    <input id="editEmail" class="form-input" placeholder="Email" value="${escapeHtml(user.email||'')}">
+                    <input id="editPhone" class="form-input" placeholder="Телефон" value="${escapeHtml(user.phone||'')}">
                     <input type="password" id="editPassword" class="form-input" placeholder="Новый пароль (если нужно)">
                     <button class="gold-button" onclick="saveProfile()">Сохранить</button>
                     <button class="dark-button" onclick="cancelEditProfile()">Отмена</button>
                 `;
-
                 document.body.appendChild(modal);
             }
 
-            function cancelEditProfile() {
-                removeModals();
+            function cancelEditProfile() { removeModals();
                 document.getElementById('modal-overlay')?.remove();
-                showProfile();
-            }
+                showProfile(); }
 
             function saveProfile() {
                 const name = document.getElementById('editName').value.trim();
                 const email = document.getElementById('editEmail').value.trim();
                 const phone = document.getElementById('editPhone').value.trim();
                 const pass = document.getElementById('editPassword').value;
-
                 if (!users[currentUser]) return;
-
                 if (name) users[currentUser].name = name;
                 if (email) users[currentUser].email = email;
                 if (phone && /^\+7\d{10}$/.test(phone)) users[currentUser].phone = phone;
-                else if (phone && phone !== '+7') {
-                    showToast('Телефон должен быть в формате +7XXXXXXXXXX', 'error');
-                    return;
-                }
+                else if (phone && phone !== '+7') { showToast('Телефон: +7XXXXXXXXXX', 'error'); return; }
                 if (pass && pass.length >= 6) users[currentUser].passwordHash = hashPassword(pass);
-                else if (pass && pass.length < 6) {
-                    showToast('Пароль должен быть не менее 6 символов', 'error');
-                    return;
-                }
-
+                else if (pass && pass.length < 6) { showToast('Пароль не менее 6 символов', 'error'); return; }
                 if (MASTER_KEY) secureSetItem('bankUsers', users);
-
                 removeModals();
                 document.getElementById('modal-overlay')?.remove();
                 showProfile();
@@ -2874,7 +2536,6 @@
             function uploadAvatar(e) {
                 const file = e.target.files[0];
                 if (!file) return;
-
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     if (!users[currentUser]) return;
@@ -2898,77 +2559,36 @@
             function clearAllMyOrders() {
                 if (!currentUser) return;
                 if (!confirm('⚠️ Отменить ВСЕ ваши активные ордера и вернуть замороженные средства?')) return;
-
-                const myBuyOrders = bktokOrders.buy.filter(o => o.user === currentUser);
-                const mySellOrders = bktokOrders.sell.filter(o => o.user === currentUser);
-
-                myBuyOrders.forEach(o => {
-                    const fee = o.amount * o.price * 0.001;
-                    const totalCost = o.amount * o.price + fee;
-                    unfreezeBalance(currentUser, totalCost);
+                [...bktokOrders.buy.filter(o => o.user === currentUser), ...bktokOrders.sell.filter(o => o.user ===
+                    currentUser)].forEach(o => {
+                    if (o.side === 'buy') unfreezeBalance(currentUser, o.amount * o.price * 1.001);
+                    else unfreezeBalance(currentUser, o.amount);
                 });
-
-                mySellOrders.forEach(o => {
-                    unfreezeBalance(currentUser, o.amount);
-                });
-
                 bktokOrders.buy = bktokOrders.buy.filter(o => o.user !== currentUser);
                 bktokOrders.sell = bktokOrders.sell.filter(o => o.user !== currentUser);
-
-                if (MASTER_KEY) {
-                    secureSetItem('bktokOrders', bktokOrders);
-                    secureSetItem('frozenBalances', frozenBalances);
-                }
-
-                showToast('✅ Все ордера отменены, средства разморожены', 'success');
+                if (MASTER_KEY) { secureSetItem('bktokOrders', bktokOrders);
+                    secureSetItem('frozenBalances', frozenBalances); }
+                showToast('✅ Все ордера отменены', 'success');
                 showProfile();
             }
 
             function resetAccountToDefault() {
-                if (!currentUser) {
-                    showToast('Вы не авторизованы', 'error');
-                    return;
-                }
-
+                if (!currentUser) return;
                 if (!confirm(
-                        '⚠️ Вы уверены? Это действие:\n\n• Сбросит ваш баланс BK до начальных 10 BK\n• Разморозит все замороженные средства\n• Отменит все ваши активные ордера\n• Удалит историю заданий и чатов\n• Оставит ваш профиль и пароль без изменений\n\nПродолжить?'
-                        )) {
-                    return;
-                }
-
-                // Отменяем все ордера пользователя и размораживаем средства
-                const myBuyOrders = bktokOrders.buy.filter(o => o.user === currentUser);
-                const mySellOrders = bktokOrders.sell.filter(o => o.user === currentUser);
-
-                myBuyOrders.forEach(o => {
-                    const fee = o.amount * o.price * 0.001;
-                    const totalCost = o.amount * o.price + fee;
-                    unfreezeBalance(currentUser, totalCost);
+                        '⚠️ Сбросить аккаунт?\n\n• Баланс → 10 BK\n• Ордера отменены\n• Задания и чаты очищены\n• Профиль и пароль сохранены'
+                        )) return;
+                [...bktokOrders.buy.filter(o => o.user === currentUser), ...bktokOrders.sell.filter(o => o.user ===
+                    currentUser)].forEach(o => {
+                    if (o.side === 'buy') unfreezeBalance(currentUser, o.amount * o.price * 1.001);
+                    else unfreezeBalance(currentUser, o.amount);
                 });
-
-                mySellOrders.forEach(o => {
-                    unfreezeBalance(currentUser, o.amount);
-                });
-
-                // Удаляем ордера пользователя
                 bktokOrders.buy = bktokOrders.buy.filter(o => o.user !== currentUser);
                 bktokOrders.sell = bktokOrders.sell.filter(o => o.user !== currentUser);
-
-                // Сбрасываем баланс
                 bktokBalances[currentUser] = 10;
                 frozenBalances[currentUser] = 0;
-
-                // Сбрасываем задания
                 userTasks[currentUser] = {};
-
-                // Очищаем чаты поддержки
-                allSupportChats[currentUser] = [{
-                    from: 'ai',
-                    text: '👋 Здравствуйте! Ваш аккаунт сброшен. Я нейросеть BK-Bank. Могу помочь с балансом, картами, токенами.',
-                    time: new Date().toISOString()
-                }];
-
-                // Сохраняем изменения
+                allSupportChats[currentUser] = [{ from: 'ai', text: '👋 Аккаунт сброшен. Я нейросеть BK-Bank.',
+                    time: new Date().toISOString() }];
                 if (MASTER_KEY) {
                     secureSetItem('bankUsers', users);
                     secureSetItem('bktokBalances', bktokBalances);
@@ -2977,36 +2597,23 @@
                     secureSetItem('userTasks', userTasks);
                     secureSetItem('allSupportChats', allSupportChats);
                 }
-
                 showToast('✅ Аккаунт сброшен! Баланс: 10 BK', 'success');
                 showProfile();
             }
 
             function destroyAccount() {
                 if (!currentUser) return;
-                if (!confirm(
-                        '⚠️ ВНИМАНИЕ! Вы уверены, что хотите ПОЛНОСТЬЮ УДАЛИТЬ аккаунт?\n\nЭто действие НЕОБРАТИМО!\n\nВсе данные будут удалены: баланс, история, ордера, чаты.'
-                        )) return;
-                if (!confirm('Подтвердите удаление еще раз. Аккаунт будет удален навсегда.')) return;
-
+                if (!confirm('⚠️ ПОЛНОСТЬЮ удалить аккаунт? Это НЕОБРАТИМО!')) return;
+                if (!confirm('Подтвердите удаление.')) return;
                 delete users[currentUser];
                 delete bktokBalances[currentUser];
                 delete frozenBalances[currentUser];
                 delete allSupportChats[currentUser];
                 delete userTasks[currentUser];
                 delete savedAccounts[currentUser];
-
-                // Удаляем ордера пользователя
                 bktokOrders.buy = bktokOrders.buy.filter(o => o.user !== currentUser);
                 bktokOrders.sell = bktokOrders.sell.filter(o => o.user !== currentUser);
-
-                // Удаляем чаты
-                Object.keys(privateChats).forEach(id => {
-                    if (id.includes(currentUser)) {
-                        delete privateChats[id];
-                    }
-                });
-
+                Object.keys(privateChats).forEach(id => { if (id.includes(currentUser)) delete privateChats[id]; });
                 if (MASTER_KEY) {
                     secureSetItem('bankUsers', users);
                     secureSetItem('bktokBalances', bktokBalances);
@@ -3016,196 +2623,107 @@
                     secureSetItem('bktokOrders', bktokOrders);
                     secureSetItem('privateChats', privateChats);
                 }
-
                 realSetItem('savedAccounts', JSON.stringify(savedAccounts));
                 realRemoveItem('currentSession');
                 realRemoveItem('MASTER_KEY');
-
                 MASTER_KEY = null;
                 currentUser = null;
-
                 updateUIForAuth();
                 showToast('Аккаунт удален', 'info');
                 toggleSection('about');
             }
 
-            // ==================== БЕКАП ====================
             function showBackupModal() {
                 if (!currentUser) return;
                 removeModals();
                 showModalOverlay();
-
                 const modal = document.createElement('div');
                 modal.className = 'backup-modal';
                 modal.addEventListener('click', (e) => e.stopPropagation());
-
                 modal.innerHTML = `
                     <div class="backup-container">
-                        <div class="backup-header">
-                            <h2>💾 Бекап данных</h2>
-                            <button class="backup-close" onclick="closeBackupModal()">&times;</button>
-                        </div>
+                        <div class="backup-header"><h2>💾 Бекап данных</h2><button class="backup-close" onclick="closeBackupModal()">&times;</button></div>
                         <div class="backup-info-card">
                             <div class="backup-info-item"><span>Аккаунт:</span><strong>${escapeHtml(currentUser)}</strong></div>
-                            <div class="backup-info-item"><span>Баланс:</span><strong>${(bktokBalances[currentUser] || 0).toFixed(2)} BK</strong></div>
+                            <div class="backup-info-item"><span>Баланс:</span><strong>${(bktokBalances[currentUser]||0).toFixed(2)} BK</strong></div>
                             <div class="backup-info-item"><span>Создан:</span><strong>${new Date(users[currentUser].registrationDate).toLocaleDateString()}</strong></div>
                         </div>
-                        <div class="backup-section">
-                            <h3>📤 Экспорт данных</h3>
-                            <button class="backup-btn backup-btn-primary" onclick="exportBackup()">Скачать файл бекапа</button>
-                            <p style="margin-top:10px; font-size:0.85rem; opacity:0.7;">Файл содержит зашифрованные данные вашего аккаунта</p>
-                        </div>
-                        <div class="backup-section">
-                            <h3>📥 Импорт данных</h3>
-                            <label class="backup-file-label">
-                                <input type="file" id="backupFileInput" accept=".json" style="display:none;" onchange="importBackup(event)">
-                                Выбрать файл бекапа
-                            </label>
-                            <p class="backup-warning">⚠️ Внимание! Импорт перезапишет текущие данные аккаунта!</p>
-                        </div>
+                        <div class="backup-section"><h3>📤 Экспорт</h3><button class="backup-btn backup-btn-primary" onclick="exportBackup()">Скачать файл</button></div>
+                        <div class="backup-section"><h3>📥 Импорт</h3><label class="backup-file-label"><input type="file" id="backupFileInput" accept=".json" style="display:none;" onchange="importBackup(event)">Выбрать файл</label><p class="backup-warning">⚠️ Импорт перезапишет данные!</p></div>
                     </div>
                 `;
-
                 document.body.appendChild(modal);
             }
 
-            function closeBackupModal() {
-                document.querySelector('.backup-modal')?.remove();
-                document.getElementById('modal-overlay')?.remove();
-            }
+            function closeBackupModal() { document.querySelector('.backup-modal')?.remove();
+                document.getElementById('modal-overlay')?.remove(); }
 
             function exportBackup() {
                 if (!currentUser) return;
-
-                const backup = {
-                    version: '1.0',
-                    username: currentUser,
-                    timestamp: new Date().toISOString(),
-                    data: {
-                        user: users[currentUser],
-                        balance: bktokBalances[currentUser] || 0,
-                        frozen: frozenBalances[currentUser] || 0,
-                        tasks: userTasks[currentUser] || {},
-                        supportChats: allSupportChats[currentUser] || []
-                    }
-                };
-
-                const json = JSON.stringify(backup, null, 2);
-                const blob = new Blob([json], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-
+                const backup = { version: '1.0', username: currentUser, timestamp: new Date().toISOString(), data: { user: users[currentUser], balance: bktokBalances[currentUser] || 0, frozen: frozenBalances[currentUser] || 0, tasks: userTasks[currentUser] || {}, supportChats: allSupportChats[currentUser] || [] } };
+                const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
                 const a = document.createElement('a');
-                a.href = url;
+                a.href = URL.createObjectURL(blob);
                 a.download = `bkbank_backup_${currentUser}_${Date.now()}.json`;
                 a.click();
-
-                URL.revokeObjectURL(url);
                 showToast('✅ Бекап создан!', 'success');
             }
 
             function importBackup(event) {
                 const file = event.target.files[0];
                 if (!file) return;
-
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     try {
                         const backup = JSON.parse(e.target.result);
-
-                        if (!backup.data || !backup.data.user) {
-                            throw new Error('Неверный формат файла');
-                        }
-
-                        if (backup.username !== currentUser) {
-                            if (!confirm(
-                                    `Файл от пользователя ${backup.username}. Импортировать в текущий аккаунт ${currentUser}?`
-                                    )) {
-                                return;
-                            }
-                        }
-
-                        // Сохраняем пароль
-                        const oldPassword = users[currentUser]?.passwordHash;
+                        if (!backup.data?.user) throw new Error('Неверный формат');
+                        if (backup.username !== currentUser && !confirm(
+                                `Импортировать данные ${backup.username} в ${currentUser}?`)) return;
+                        const oldPass = users[currentUser]?.passwordHash;
                         users[currentUser] = { ...users[currentUser], ...backup.data.user };
-                        if (oldPassword) users[currentUser].passwordHash = oldPassword;
-
+                        if (oldPass) users[currentUser].passwordHash = oldPass;
                         bktokBalances[currentUser] = backup.data.balance || 0;
                         frozenBalances[currentUser] = backup.data.frozen || 0;
                         userTasks[currentUser] = backup.data.tasks || {};
                         allSupportChats[currentUser] = backup.data.supportChats || [];
-
-                        if (MASTER_KEY) {
-                            secureSetItem('bankUsers', users);
+                        if (MASTER_KEY) { secureSetItem('bankUsers', users);
                             secureSetItem('bktokBalances', bktokBalances);
                             secureSetItem('frozenBalances', frozenBalances);
                             secureSetItem('userTasks', userTasks);
-                            secureSetItem('allSupportChats', allSupportChats);
-                        }
-
-                        showToast('✅ Данные успешно импортированы!', 'success');
+                            secureSetItem('allSupportChats', allSupportChats); }
+                        showToast('✅ Данные импортированы!', 'success');
                         closeBackupModal();
                         showProfile();
-
-                    } catch (error) {
-                        showToast('❌ Ошибка импорта: ' + error.message, 'error');
-                    }
+                    } catch (er) { showToast('❌ Ошибка: ' + er.message, 'error'); }
                 };
-
                 reader.readAsText(file);
             }
 
-            // ==================== АВТОРИЗАЦИЯ ====================
             function showLoginForm() {
                 removeModals();
                 showModalOverlay();
-
                 requireCaptcha = failedAttempts >= 2;
-
                 const modal = document.createElement('div');
                 modal.className = 'modal-form';
                 modal.addEventListener('click', (e) => e.stopPropagation());
-
-                let html = `
-                    <div class="form-title">🔐 Вход в BK-Bank</div>
-                    <div id="loginError" class="error-text hidden"></div>
-                    <input id="loginUsername" class="form-input" placeholder="👤 Никнейм или телефон">
-                    <input type="password" id="loginPassword" class="form-input" placeholder="🔑 Пароль">
-                `;
-
+                let html =
+                    `<div class="form-title">🔐 Вход в BK-Bank</div><div id="loginError" class="error-text hidden"></div><input id="loginUsername" class="form-input" placeholder="👤 Никнейм или телефон"><input type="password" id="loginPassword" class="form-input" placeholder="🔑 Пароль">`;
                 if (requireCaptcha) {
                     const ops = ['+', '-', '×'];
-                    const op = ops[Math.floor(Math.random() * ops.length)];
-                    let n1, n2, ans;
-
-                    if (op === '+') {
-                        n1 = Math.floor(Math.random() * 20) + 1;
+                    const op = ops[Math.floor(Math.random() * 3)];
+                    let n1, n2;
+                    if (op === '+') { n1 = Math.floor(Math.random() * 20) + 1;
                         n2 = Math.floor(Math.random() * 20) + 1;
-                        ans = n1 + n2;
-                    } else if (op === '-') {
-                        n1 = Math.floor(Math.random() * 20) + 11;
+                        loginCaptchaAnswer = n1 + n2; } else if (op === '-') { n1 = Math.floor(Math.random() * 20) + 11;
                         n2 = Math.floor(Math.random() * 10) + 1;
-                        ans = n1 - n2;
-                    } else {
-                        n1 = Math.floor(Math.random() * 10) + 1;
+                        loginCaptchaAnswer = n1 - n2; } else { n1 = Math.floor(Math.random() * 10) + 1;
                         n2 = Math.floor(Math.random() * 10) + 1;
-                        ans = n1 * n2;
-                    }
-
-                    loginCaptchaAnswer = ans;
-                    html += `
-                        <div class="captcha-box">
-                            <div style="font-size:1rem; color:#888; margin-bottom:10px;">🤖 Подтвердите, что вы человек</div>
-                            <div class="captcha-question"><span class="captcha-emoji">🧮</span> ${n1} ${op} ${n2} = ?</div>
-                            <input id="loginCaptcha" class="form-input" placeholder="Введите ответ" style="text-align:center;">
-                        </div>
-                    `;
+                        loginCaptchaAnswer = n1 * n2; }
+                    html +=
+                        `<div class="captcha-box"><div style="color:#888;margin-bottom:10px;">🤖 Подтвердите, что вы человек</div><div class="captcha-question">🧮 ${n1} ${op} ${n2} = ?</div><input id="loginCaptcha" class="form-input" placeholder="Ответ" style="text-align:center;"></div>`;
                 }
-
-                html += `
-                    <button class="gold-button" onclick="login()">🚪 Войти</button>
-                    <span class="text-link" onclick="showRegistrationForm()">✨ Создать аккаунт</span>
-                `;
-
+                html +=
+                    `<button class="gold-button" onclick="login()">🚪 Войти</button><span class="text-link" onclick="showRegistrationForm()">✨ Создать аккаунт</span>`;
                 modal.innerHTML = html;
                 document.body.appendChild(modal);
             }
@@ -3214,71 +2732,35 @@
                 const username = document.getElementById('loginUsername')?.value.trim();
                 const password = document.getElementById('loginPassword')?.value;
                 const errorEl = document.getElementById('loginError');
-
-                if (!username || !password) {
-                    return showError(errorEl, 'Заполните все поля');
-                }
-
+                if (!username || !password) return showError(errorEl, 'Заполните все поля');
                 if (requireCaptcha) {
                     const captcha = document.getElementById('loginCaptcha')?.value.trim();
-                    if (!captcha) {
-                        return showError(errorEl, 'Введите ответ капчи');
-                    }
-                    if (parseInt(captcha) !== loginCaptchaAnswer) {
-                        failedAttempts++;
+                    if (!captcha) return showError(errorEl, 'Введите капчу');
+                    if (parseInt(captcha) !== loginCaptchaAnswer) { failedAttempts++;
                         realSetItem('failedAttempts', failedAttempts);
-                        showLoginForm();
-                        return showError(errorEl, 'Неверная капча');
-                    }
+                        showLoginForm(); return showError(errorEl, 'Неверная капча'); }
                 }
 
-                // Пробуем расшифровать данные с введенным паролем
-                const salt = getUserSalt(username);
-                MASTER_KEY = CryptoJS.PBKDF2(password, salt, {
-                    keySize: 256 / 32,
-                    iterations: 100000,
-                    hasher: CryptoJS.algo.SHA256
-                }).toString();
-
-                // Пытаемся загрузить существующие данные
+                MASTER_KEY = CryptoJS.PBKDF2(password, getUserSalt(username), { keySize: 256 / 32, iterations: 100000,
+                    hasher: CryptoJS.algo.SHA256 }).toString();
                 const decryptedUsers = secureGetItem('bankUsers');
 
                 if (!decryptedUsers) {
-                    // Возможно, данных еще нет — создаем
-                    if (!realGetItem('bankUsers')) {
-                        // Данных нет, значит пользователь не существует
-                        MASTER_KEY = null;
-                        return showError(errorEl, 'Пользователь не найден');
-                    }
-                    // Данные есть, но не расшифровались — неверный пароль
                     MASTER_KEY = null;
+                    if (!realGetItem('bankUsers')) return showError(errorEl, 'Пользователь не найден');
                     return showError(errorEl, 'Неверный пароль');
                 }
 
                 users = decryptedUsers;
-
-                // Ищем пользователя
-                const foundUser = users[username] ? username : Object.keys(users).find(u => users[u].phone ===
-                username);
-
-                if (!foundUser || !users[foundUser]) {
-                    MASTER_KEY = null;
-                    return showError(errorEl, 'Пользователь не найден');
-                }
-
-                // Проверяем пароль
-                const expectedHash = hashPassword(password);
-                if (!constantTimeCompare(users[foundUser].passwordHash, expectedHash)) {
-                    MASTER_KEY = null;
+                const foundUser = users[username] ? username : Object.keys(users).find(u => users[u].phone === username);
+                if (!foundUser || !users[foundUser]) { MASTER_KEY = null; return showError(errorEl,
+                    'Пользователь не найден'); }
+                if (!constantTimeCompare(users[foundUser].passwordHash, hashPassword(password))) { MASTER_KEY = null;
                     failedAttempts++;
-                    realSetItem('failedAttempts', failedAttempts);
-                    return showError(errorEl, 'Неверный пароль');
-                }
+                    realSetItem('failedAttempts', failedAttempts); return showError(errorEl, 'Неверный пароль'); }
 
-                // Успешный вход
                 failedAttempts = 0;
                 realSetItem('failedAttempts', '0');
-
                 currentUser = foundUser;
                 bktokBalances = secureGetItem('bktokBalances') || {};
                 frozenBalances = secureGetItem('frozenBalances') || {};
@@ -3287,21 +2769,13 @@
                 bktokOrders = secureGetItem('bktokOrders') || { buy: [], sell: [] };
                 bktokTrades = secureGetItem('bktokTrades') || [];
                 userTasks = secureGetItem('userTasks') || {};
-
-                // Гарантируем начальный баланс
-                if (bktokBalances[currentUser] === undefined) {
-                    bktokBalances[currentUser] = 10;
-                    secureSetItem('bktokBalances', bktokBalances);
-                }
-
+                if (bktokBalances[currentUser] === undefined) { bktokBalances[currentUser] = 10;
+                    secureSetItem('bktokBalances', bktokBalances); }
                 savedAccounts[foundUser] = true;
                 realSetItem('savedAccounts', JSON.stringify(savedAccounts));
-
                 saveSession();
                 removeModals();
                 document.getElementById('modal-overlay')?.remove();
-
-                showMainContent();
                 showWelcomeMessage(users[foundUser].name);
                 updateUIForAuth();
                 toggleSection('about');
@@ -3316,7 +2790,6 @@
                 showModalOverlay();
                 regStep = 1;
                 regData = {};
-
                 const modal = document.createElement('div');
                 modal.className = 'modal-form';
                 modal.addEventListener('click', (e) => e.stopPropagation());
@@ -3325,89 +2798,46 @@
             }
 
             function renderRegStep(modal) {
-                let html = `
-                    <div class="form-title">📝 Регистрация</div>
-                    <div class="step-indicator">
-                        ${[1,2,3].map(i => `
-                            <div class="step-dot ${i === regStep ? 'active' : ''} ${i < regStep ? 'completed' : ''}"></div>
-                        `).join('')}
-                    </div>
-                    <div id="registerError" class="error-text hidden"></div>
-                `;
-
-                if (regStep === 1) {
-                    html += `
-                        <input id="regName" class="form-input" placeholder="👤 Ваше имя" value="${escapeHtml(regData.name || '')}">
-                        <input id="regUsername" class="form-input" placeholder="📛 Никнейм" value="${escapeHtml(regData.username || '')}">
-                        <input type="password" id="regPassword" class="form-input" placeholder="🔒 Пароль">
-                        <input type="password" id="regConfirm" class="form-input" placeholder="🔒 Подтвердите пароль">
-                        <button class="gold-button" onclick="nextRegStep()">Далее →</button>
-                    `;
-                } else if (regStep === 2) {
-                    html += `
-                        <input id="regEmail" class="form-input" placeholder="📧 Email" value="${escapeHtml(regData.email || '')}">
-                        <input id="regPhone" class="form-input" placeholder="📱 Телефон +7..." value="${escapeHtml(regData.phone || '+7')}">
-                        <button class="gold-button" onclick="nextRegStep()">Далее →</button>
-                        <button class="dark-button" onclick="prevRegStep()">← Назад</button>
-                    `;
-                } else {
-                    const n1 = Math.floor(Math.random() * 15) + 1;
-                    const n2 = Math.floor(Math.random() * 15) + 1;
+                let html =
+                    `<div class="form-title">📝 Регистрация</div><div class="step-indicator">${[1,2,3].map(i=>`<div class="step-dot ${i===regStep?'active':''} ${i<regStep?'completed':''}"></div>`).join('')}</div><div id="registerError" class="error-text hidden"></div>`;
+                if (regStep === 1) html +=
+                    `<input id="regName" class="form-input" placeholder="👤 Имя" value="${escapeHtml(regData.name||'')}"><input id="regUsername" class="form-input" placeholder="📛 Никнейм" value="${escapeHtml(regData.username||'')}"><input type="password" id="regPassword" class="form-input" placeholder="🔒 Пароль"><input type="password" id="regConfirm" class="form-input" placeholder="🔒 Подтвердите пароль"><button class="gold-button" onclick="nextRegStep()">Далее →</button>`;
+                else if (regStep === 2) html +=
+                    `<input id="regEmail" class="form-input" placeholder="📧 Email" value="${escapeHtml(regData.email||'')}"><input id="regPhone" class="form-input" placeholder="📱 +7..." value="${escapeHtml(regData.phone||'+7')}"><button class="gold-button" onclick="nextRegStep()">Далее →</button><button class="dark-button" onclick="prevRegStep()">← Назад</button>`;
+                else {
+                    const n1 = Math.floor(Math.random() * 15) + 1,
+                        n2 = Math.floor(Math.random() * 15) + 1;
                     captchaAnswer = n1 + n2;
-
-                    html += `
-                        <div class="captcha-box">
-                            <div style="font-size:1rem; color:#888; margin-bottom:10px;">🔐 Проверка безопасности</div>
-                            <div class="captcha-question"><span class="captcha-emoji">🔢</span> ${n1} + ${n2} = ?</div>
-                            <input id="captchaInput" class="form-input" placeholder="Введите ответ" style="text-align:center;">
-                        </div>
-                        <button class="gold-button" onclick="completeRegistration()">✅ Зарегистрироваться</button>
-                        <button class="dark-button" onclick="prevRegStep()">← Назад</button>
-                    `;
+                    html +=
+                        `<div class="captcha-box"><div style="color:#888;margin-bottom:10px;">🔐 Проверка</div><div class="captcha-question">🔢 ${n1} + ${n2} = ?</div><input id="captchaInput" class="form-input" placeholder="Ответ" style="text-align:center;"></div><button class="gold-button" onclick="completeRegistration()">✅ Зарегистрироваться</button><button class="dark-button" onclick="prevRegStep()">← Назад</button>`;
                 }
-
                 html +=
-                    `<span class="text-link" onclick="showLoginForm()">← Уже есть аккаунт? Войти</span>`;
+                `<span class="text-link" onclick="showLoginForm()">← Уже есть аккаунт? Войти</span>`;
                 modal.innerHTML = html;
             }
 
             function nextRegStep() {
                 const errorEl = document.getElementById('registerError');
-
                 if (regStep === 1) {
                     const name = document.getElementById('regName').value.trim();
                     const username = document.getElementById('regUsername').value.trim();
                     const password = document.getElementById('regPassword').value;
                     const confirm = document.getElementById('regConfirm').value;
-
-                    if (!name || !username || !password || !confirm) {
-                        return showError(errorEl, 'Все поля обязательны');
-                    }
-                    if (password.length < 6) {
-                        return showError(errorEl, 'Пароль должен быть не менее 6 символов');
-                    }
-                    if (password !== confirm) {
-                        return showError(errorEl, 'Пароли не совпадают');
-                    }
-                    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-                        return showError(errorEl, 'Никнейм может содержать только буквы, цифры и _');
-                    }
-
+                    if (!name || !username || !password || !confirm) return showError(errorEl, 'Все поля обязательны');
+                    if (password.length < 6) return showError(errorEl, 'Пароль не менее 6 символов');
+                    if (password !== confirm) return showError(errorEl, 'Пароли не совпадают');
+                    if (!/^[a-zA-Z0-9_]+$/.test(username)) return showError(errorEl,
+                        'Никнейм: латиница, цифры, _');
                     regData = { name, username, password };
                     regStep = 2;
                     renderRegStep(document.querySelector('.modal-form'));
-
                 } else if (regStep === 2) {
                     const email = document.getElementById('regEmail').value.trim();
                     const phone = document.getElementById('regPhone').value.trim();
-
-                    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                        return showError(errorEl, 'Некорректный Email');
-                    }
-                    if (phone && phone !== '+7' && !/^\+7\d{10}$/.test(phone)) {
-                        return showError(errorEl, 'Телефон должен быть в формате +7XXXXXXXXXX (10 цифр)');
-                    }
-
+                    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError(errorEl,
+                    'Некорректный Email');
+                    if (phone && phone !== '+7' && !/^\+7\d{10}$/.test(phone)) return showError(errorEl,
+                        'Телефон: +7XXXXXXXXXX');
                     regData.email = email || '';
                     regData.phone = phone || '+70000000000';
                     regStep = 3;
@@ -3415,63 +2845,28 @@
                 }
             }
 
-            function prevRegStep() {
-                if (regStep > 1) {
-                    regStep--;
-                    renderRegStep(document.querySelector('.modal-form'));
-                }
-            }
+            function prevRegStep() { if (regStep > 1) { regStep--;
+                    renderRegStep(document.querySelector('.modal-form')); } }
 
             async function completeRegistration() {
                 const errorEl = document.getElementById('registerError');
                 const captcha = document.getElementById('captchaInput')?.value.trim();
-
-                if (!captcha) {
-                    return showError(errorEl, 'Введите ответ');
-                }
-                if (parseInt(captcha) !== captchaAnswer) {
-                    return showError(errorEl, 'Неверный ответ');
-                }
+                if (!captcha) return showError(errorEl, 'Введите ответ');
+                if (parseInt(captcha) !== captchaAnswer) return showError(errorEl, 'Неверный ответ');
 
                 const { name, username, email, phone, password } = regData;
-
-                // Создаем MASTER_KEY для нового пользователя
-                const salt = getUserSalt(username);
-                MASTER_KEY = CryptoJS.PBKDF2(password, salt, {
-                    keySize: 256 / 32,
-                    iterations: 100000,
-                    hasher: CryptoJS.algo.SHA256
-                }).toString();
-
-                // Пытаемся загрузить существующих пользователей
+                MASTER_KEY = CryptoJS.PBKDF2(password, getUserSalt(username), { keySize: 256 / 32, iterations: 100000,
+                    hasher: CryptoJS.algo.SHA256 }).toString();
                 const existingUsers = secureGetItem('bankUsers') || {};
+                if (existingUsers[username]) { MASTER_KEY = null; return showError(errorEl, 'Никнейм занят'); }
+                if (phone !== '+70000000000' && Object.values(existingUsers).some(u => u.phone === phone)) { MASTER_KEY =
+                        null; return showError(errorEl, 'Телефон занят'); }
 
-                if (existingUsers[username]) {
-                    MASTER_KEY = null;
-                    return showError(errorEl, 'Этот никнейм уже занят');
-                }
-
-                // Проверяем уникальность телефона
-                if (phone !== '+70000000000' && Object.values(existingUsers).some(u => u.phone === phone)) {
-                    MASTER_KEY = null;
-                    return showError(errorEl, 'Этот телефон уже занят');
-                }
-
-                // Создаем пользователя
                 users = existingUsers;
-                users[username] = {
-                    name,
-                    email,
-                    phone,
-                    passwordHash: hashPassword(password),
-                    registrationDate: new Date().toISOString(),
-                    avatar: null
-                };
-
+                users[username] = { name, email, phone, passwordHash: hashPassword(password), registrationDate: new Date()
+                        .toISOString(), avatar: null };
                 secureSetItem('bankUsers', users);
                 currentUser = username;
-
-                // Инициализируем данные
                 bktokBalances = {};
                 bktokBalances[username] = 10;
                 frozenBalances = {};
@@ -3480,17 +2875,12 @@
                 bktokOrders = { buy: [], sell: [] };
                 bktokTrades = [];
                 userTasks = {};
-
                 secureSetItem('bktokBalances', bktokBalances);
-
                 savedAccounts[username] = true;
                 realSetItem('savedAccounts', JSON.stringify(savedAccounts));
-
                 saveSession();
                 removeModals();
                 document.getElementById('modal-overlay')?.remove();
-
-                showMainContent();
                 showWelcomeMessage(name);
                 updateUIForAuth();
                 toggleSection('about');
@@ -3498,74 +2888,42 @@
 
             function logout() {
                 if (chartInterval) clearInterval(chartInterval);
-
-                if (currentUser && MASTER_KEY) {
-                    if (users[currentUser]) {
-                        users[currentUser].isLoggedIn = false;
-                        secureSetItem('bankUsers', users);
-                    }
-                }
-
+                if (currentUser && MASTER_KEY && users[currentUser]) { users[currentUser].isLoggedIn = false;
+                    secureSetItem('bankUsers', users); }
                 MASTER_KEY = null;
                 currentUser = null;
-
                 realRemoveItem('currentSession');
                 realRemoveItem('MASTER_KEY');
-
                 updateUIForAuth();
-                // Показываем форму входа
                 removeModals();
                 document.getElementById('modal-overlay')?.remove();
-                showLoginForm();
             }
 
             function switchAccount() {
-                if (currentUser && MASTER_KEY) {
-                    if (users[currentUser]) {
-                        users[currentUser].isLoggedIn = false;
-                        secureSetItem('bankUsers', users);
-                    }
-                }
-
+                if (currentUser && MASTER_KEY && users[currentUser]) { users[currentUser].isLoggedIn = false;
+                    secureSetItem('bankUsers', users); }
                 MASTER_KEY = null;
                 currentUser = null;
-
                 realRemoveItem('currentSession');
                 realRemoveItem('MASTER_KEY');
-
                 updateUIForAuth();
                 showLoginForm();
             }
 
-            // ==================== ИНИЦИАЛИЗАЦИЯ ====================
             loadUnencryptedData();
 
-            // Сохраняем сессию при уходе
-            window.addEventListener('beforeunload', () => {
-                if (currentUser && MASTER_KEY) {
-                    saveSession();
-                }
-            });
+            window.addEventListener('beforeunload', () => { if (currentUser && MASTER_KEY) saveSession(); });
 
-            // Запуск при загрузке
             window.onload = async () => {
-                // Применяем тему
-                if (realGetItem('theme') === 'light') {
-                    document.body.classList.add('light-theme');
-                }
+                if (realGetItem('theme') === 'light') document.body.classList.add('light-theme');
 
                 const savedSession = realGetItem('currentSession');
                 const savedMasterKey = realGetItem('MASTER_KEY');
-
-                console.log('🔄 Попытка восстановления сессии...');
 
                 if (savedSession && savedMasterKey) {
                     try {
                         const sessionData = JSON.parse(savedSession);
                         MASTER_KEY = savedMasterKey;
-
-                        console.log('🔑 MASTER_KEY загружен');
-
                         const decryptedUsers = secureGetItem('bankUsers');
                         if (decryptedUsers && decryptedUsers[sessionData.username]) {
                             users = decryptedUsers;
@@ -3577,36 +2935,22 @@
                             bktokOrders = secureGetItem('bktokOrders') || { buy: [], sell: [] };
                             bktokTrades = secureGetItem('bktokTrades') || [];
                             userTasks = secureGetItem('userTasks') || {};
-
                             savedAccounts[sessionData.username] = true;
                             realSetItem('savedAccounts', JSON.stringify(savedAccounts));
-
-                            console.log('✅ Сессия восстановлена для', currentUser);
-                            showMainContent();
-                            updateUIForAuth();
-                            toggleSection('about');
-                            return;
-                        } else {
-                            console.warn('⚠️ Не удалось расшифровать данные');
+                            console.log('✅ Сессия восстановлена');
                         }
                     } catch (e) {
-                        console.error('❌ Ошибка восстановления:', e);
                         MASTER_KEY = null;
                         realRemoveItem('MASTER_KEY');
                         realRemoveItem('currentSession');
                     }
                 }
 
-                // Если нет сессии — показываем главную и форму входа
-                console.log('ℹ️ Нет сохраненной сессии, показываем форму входа');
                 updateUIForAuth();
-                showMainContent();
                 toggleSection('about');
-                // Показываем форму входа автоматически
-                setTimeout(() => showLoginForm(), 500);
+                console.log('✅ BK-Bank v3.1 — Главный экран открыт, окно входа не показывается автоматически');
             };
 
-            // ==================== ГЛОБАЛЬНЫЕ ФУНКЦИИ ====================
             window.toggleTheme = toggleTheme;
             window.toggleSection = toggleSection;
             window.showLoginForm = showLoginForm;
@@ -3641,9 +2985,6 @@
             window.closeBackupModal = closeBackupModal;
             window.exportBackup = exportBackup;
             window.importBackup = importBackup;
-
-            console.log('✅ BK-Bank v3.0 — Все исправлено и работает!');
-            console.log('📌 Функции: Регистрация, Вход, Сессии, Бинанс, Задания, Кейсы, Чаты, Бекап, Сброс аккаунта');
 
         })();
     </script>
