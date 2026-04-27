@@ -821,7 +821,6 @@
             color: #FFE44D !important;
             text-decoration: underline;
         }
-        /* Стили для приветственного сообщения (жёлтый фон, чёрный текст) */
         .welcome-toast {
             position: fixed;
             top: 80px;
@@ -1677,7 +1676,6 @@
             let selectedPrivateChat = null;
 
             const BASE_SALT = "BK_SECURE_SALT_V2_2026";
-
             const _realStorage = window.localStorage;
 
             function realGetItem(key) { return _realStorage.getItem(key); }
@@ -1714,8 +1712,8 @@
                 return CryptoJS.SHA256(username + BASE_SALT).toString();
             }
 
-            function hashPassword(p) {
-                return CryptoJS.SHA256(p + getUserSalt(p)).toString();
+            function hashPassword(p, username) {
+                return CryptoJS.SHA256(p + getUserSalt(username)).toString();
             }
 
             function secureSetItem(key, value) {
@@ -1753,10 +1751,8 @@
                 if (!currentUser) return false;
                 if (user !== currentUser && operation !== 'admin_mint' && operation !== 'rollback') return false;
                 if (Math.abs(amount) > 1000000 && operation !== 'rollback') return false;
-
                 bktokBalances[user] = (bktokBalances[user] || 0) + amount;
                 if (bktokBalances[user] < 0) bktokBalances[user] = 0;
-
                 if (MASTER_KEY) secureSetItem('bktokBalances', bktokBalances);
                 return true;
             }
@@ -1784,38 +1780,29 @@
             function matchOrders() {
                 let iterationCount = 0;
                 const MAX_ITERATIONS = 1000;
-
                 bktokOrders.buy.sort((a, b) => b.price - a.price || a.created - b.created);
                 bktokOrders.sell.sort((a, b) => a.price - b.price || a.created - b.created);
-
                 let trades = [];
                 let i = 0,
                     j = 0;
-
                 while (i < bktokOrders.buy.length && j < bktokOrders.sell.length && iterationCount < MAX_ITERATIONS) {
                     iterationCount++;
                     const buy = bktokOrders.buy[i];
                     const sell = bktokOrders.sell[j];
-
                     if (buy.price >= sell.price && buy.user !== sell.user) {
                         const amount = Math.min(buy.amount, sell.amount);
                         const price = sell.price;
                         const fee = amount * price * 0.001;
-
                         const buyerAvailable = getAvailableBalance(buy.user);
                         const sellerAvailable = getAvailableBalance(sell.user);
-
                         if (buyerAvailable < amount * price + fee) { i++; continue; }
                         if (sellerAvailable < amount) { j++; continue; }
-
                         unfreezeBalance(buy.user, amount * price + fee);
                         unfreezeBalance(sell.user, amount);
-
                         bktokBalances[buy.user] = (bktokBalances[buy.user] || 0) - (amount * price + fee);
                         bktokBalances[buy.user] = (bktokBalances[buy.user] || 0) + amount;
                         bktokBalances[sell.user] = (bktokBalances[sell.user] || 0) - amount;
                         bktokBalances[sell.user] = (bktokBalances[sell.user] || 0) + (amount * price - fee);
-
                         trades.push({
                             id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
                             buyer: buy.user,
@@ -1825,10 +1812,8 @@
                             fee: fee,
                             time: new Date().toISOString()
                         });
-
                         buy.amount -= amount;
                         sell.amount -= amount;
-
                         if (buy.amount <= 0.0001) bktokOrders.buy.splice(i, 1);
                         else i++;
                         if (sell.amount <= 0.0001) bktokOrders.sell.splice(j, 1);
@@ -1839,7 +1824,6 @@
                         j++;
                     }
                 }
-
                 if (trades.length > 0) {
                     bktokTrades.push(...trades);
                     if (MASTER_KEY) {
@@ -1852,16 +1836,12 @@
             }
 
             function showToast(message, type = 'info') {
-                // Удаляем старые тосты
                 document.querySelectorAll('.welcome-toast, [style*="position: fixed"][style*="top: 80px"]').forEach(el => {
                     if (el.classList.contains('welcome-toast') || el.style.background === 'rgb(255, 215, 0)') {
                         el.remove();
                     }
                 });
-
                 const toast = document.createElement('div');
-                
-                // Для приветственных сообщений используем жёлтый фон и чёрный текст
                 if (type === 'welcome') {
                     toast.className = 'welcome-toast';
                 } else {
@@ -1896,13 +1876,14 @@
             function updateUIForAuth() {
                 const authBtns = document.getElementById('auth-buttons');
                 const profileBtn = document.getElementById('profile-btn-header');
-
                 if (currentUser) {
                     authBtns.classList.add('hidden');
                     profileBtn.classList.remove('hidden');
                     const user = users[currentUser];
-                    document.getElementById('header-username').textContent = user.name || currentUser;
-                    if (user.avatar) document.getElementById('header-avatar').src = user.avatar;
+                    if (user) {
+                        document.getElementById('header-username').textContent = user.name || currentUser;
+                        if (user.avatar) document.getElementById('header-avatar').src = user.avatar;
+                    }
                     ['bktok', 'tasks', 'cases', 'chats'].forEach(section => {
                         const gm = document.getElementById(section + '-guest-message');
                         const ct = document.getElementById(section + '-content');
@@ -1929,7 +1910,7 @@
             }
 
             function removeModals() {
-                document.querySelectorAll('.modal-form').forEach(m => m.remove());
+                document.querySelectorAll('.modal-form, .backup-modal').forEach(m => m.remove());
             }
 
             function showModalOverlay() {
@@ -1945,18 +1926,20 @@
                 document.body.appendChild(overlay);
             }
 
-            function toggleSection(section) {
+            function hideAllSections() {
                 ['about', 'services', 'cards', 'bktok', 'tasks', 'cases', 'support', 'chats', 'profile',
                     'public-profile'
                 ].forEach(id => {
                     document.getElementById(id + '-section')?.classList.add('hidden');
                 });
+            }
 
+            function toggleSection(section) {
+                hideAllSections();
                 if (section !== 'bktok' && chartInterval) {
                     clearInterval(chartInterval);
                     chartInterval = null;
                 }
-
                 switch (section) {
                     case 'about':
                         document.getElementById('about-section')?.classList.remove('hidden');
@@ -2092,12 +2075,10 @@
             function renderChart() {
                 const container = document.getElementById('chart-bars');
                 if (!container) return;
-
                 let trades = [...bktokTrades].reverse();
                 const periodMs = { '1H': 3600000, '6H': 21600000, '24H': 86400000, '1W': 604800000 };
                 const cutoff = Date.now() - (periodMs[chartPeriod] || 86400000);
                 trades = trades.filter(t => new Date(t.time).getTime() > cutoff);
-
                 if (trades.length === 0) {
                     container.innerHTML = '<p style="text-align:center;padding:30px;color:#888;">Нет данных</p>';
                     ['chart-open', 'chart-high', 'chart-low'].forEach(id => {
@@ -2108,7 +2089,6 @@
                     if (changeEl) changeEl.textContent = '0%';
                     return;
                 }
-
                 const bars = [];
                 const barCount = Math.min(12, trades.length);
                 const step = Math.floor(trades.length / barCount) || 1;
@@ -2124,21 +2104,17 @@
                         isRed: prices[0] < prices[prices.length - 1]
                     });
                 }
-
                 const max = Math.max(...bars.map(b => b.high));
                 const min = Math.min(...bars.map(b => b.low));
                 const range = (max - min) || 1;
-
                 container.innerHTML = bars.map(b => {
                     const height = ((b.close - min) / range) * 120 + 40;
                     return `<div class="chart-bar-wrapper"><div class="chart-bar ${b.isRed ? 'red' : ''}" style="height:${height}px;" title="O:${b.open.toFixed(2)} H:${b.high.toFixed(2)} L:${b.low.toFixed(2)} C:${b.close.toFixed(2)}"></div><div class="chart-bar-value">${b.close.toFixed(2)}</div></div>`;
                 }).join('');
-
                 const first = bars[0]?.open || 0;
                 const last = bars[bars.length - 1]?.close || 0;
                 const change = last - first;
                 const percent = first ? ((change / first) * 100).toFixed(2) : 0;
-
                 document.getElementById('chart-open').textContent = first.toFixed(2);
                 document.getElementById('chart-high').textContent = max.toFixed(2);
                 document.getElementById('chart-low').textContent = min.toFixed(2);
@@ -2154,7 +2130,6 @@
                     sellHtml = '';
                 const buyOrders = [...bktokOrders.buy].sort((a, b) => b.price - a.price);
                 const sellOrders = [...bktokOrders.sell].sort((a, b) => a.price - b.price);
-
                 buyOrders.slice(0, 8).forEach(o => {
                     buyHtml +=
                         `<div style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid rgba(255,255,255,0.05);"><span>${o.amount.toFixed(2)} BK</span><span style="color:#4ade80;">${o.price.toFixed(2)} ₽</span></div>`;
@@ -2163,14 +2138,12 @@
                     sellHtml +=
                         `<div style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid rgba(255,255,255,0.05);"><span>${o.amount.toFixed(2)} BK</span><span style="color:#ff5e5e;">${o.price.toFixed(2)} ₽</span></div>`;
                 });
-
                 const buyContainer = document.getElementById('buy-orders');
                 const sellContainer = document.getElementById('sell-orders');
                 if (buyContainer) buyContainer.innerHTML = buyHtml ||
                     '<p style="color:#888;padding:10px;">Нет заявок</p>';
                 if (sellContainer) sellContainer.innerHTML = sellHtml ||
                     '<p style="color:#888;padding:10px;">Нет заявок</p>';
-
                 const myOrders = [...bktokOrders.buy, ...bktokOrders.sell].filter(o => o.user === currentUser);
                 const myOrdersContainer = document.getElementById('my-orders');
                 if (myOrdersContainer) {
@@ -2202,16 +2175,13 @@
                 const priceInput = document.getElementById('order-price');
                 const amountInput = document.getElementById('order-amount');
                 if (!priceInput || !amountInput) { showToast('Ошибка интерфейса', 'error'); return; }
-
                 const price = parseFloat(priceInput.value);
                 const amount = parseFloat(amountInput.value);
                 if (!price || !amount || price <= 0 || amount <= 0) { showToast(
                         'Введите корректные цену и количество', 'error'); return; }
-
                 const fee = amount * price * 0.001;
                 const totalCost = amount * price + fee;
                 const available = getAvailableBalance(currentUser);
-
                 if (side === 'buy') {
                     if (available < totalCost) { showToast(
                             `Недостаточно средств. Доступно: ${available.toFixed(2)} BK`, 'error'); return; }
@@ -2222,12 +2192,10 @@
                             'error'); return; }
                     if (!freezeBalance(currentUser, amount)) { showToast('Ошибка заморозки средств', 'error'); return; }
                 }
-
                 const orderId = crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36)
                     .substr(2, 9);
                 bktokOrders[side].push({ id: orderId, user: currentUser, side, price, amount, created: Date.now() });
                 if (MASTER_KEY) secureSetItem('bktokOrders', bktokOrders);
-
                 priceInput.value = '';
                 amountInput.value = '';
                 matchOrders();
@@ -2238,14 +2206,12 @@
             function cancelOrder(id) {
                 let order = bktokOrders.buy.find(o => o.id == id) || bktokOrders.sell.find(o => o.id == id);
                 if (!order || order.user !== currentUser) { showToast('Ордер не найден или не ваш', 'error'); return; }
-
                 if (order.side === 'buy') {
                     const fee = order.amount * order.price * 0.001;
                     unfreezeBalance(currentUser, order.amount * order.price + fee);
                 } else {
                     unfreezeBalance(currentUser, order.amount);
                 }
-
                 bktokOrders.buy = bktokOrders.buy.filter(o => o.id != id);
                 bktokOrders.sell = bktokOrders.sell.filter(o => o.id != id);
                 if (MASTER_KEY) secureSetItem('bktokOrders', bktokOrders);
@@ -2357,7 +2323,6 @@
                 if (MASTER_KEY) secureSetItem('allSupportChats', allSupportChats);
                 input.value = '';
                 loadAIMessages();
-
                 setTimeout(() => {
                     let response = '🤔 Я могу помочь с балансом, картами, токенами или откатом сделок.';
                     if (text.toLowerCase().includes('баланс')) response =
@@ -2435,6 +2400,7 @@
             function showProfile() {
                 if (!currentUser) return;
                 const user = users[currentUser];
+                if (!user) { showToast('Ошибка: профиль не найден', 'error'); return; }
                 const container = document.getElementById('profile-section');
                 container.innerHTML = `
                     <h2>Личный кабинет</h2><div class="divider"></div>
@@ -2464,6 +2430,7 @@
                     <div class="account-switcher" id="account-switcher"></div>
                 `;
                 container.classList.remove('hidden');
+                document.getElementById('profile-section')?.classList.remove('hidden');
                 renderAccountSwitcher();
             }
 
@@ -2511,6 +2478,7 @@
 
             function showEditProfileForm() {
                 const user = users[currentUser];
+                if (!user) return;
                 removeModals();
                 showModalOverlay();
                 const modal = document.createElement('div');
@@ -2542,7 +2510,7 @@
                 if (email) users[currentUser].email = email;
                 if (phone && /^\+7\d{10}$/.test(phone)) users[currentUser].phone = phone;
                 else if (phone && phone !== '+7') { showToast('Телефон: +7XXXXXXXXXX', 'error'); return; }
-                if (pass && pass.length >= 6) users[currentUser].passwordHash = hashPassword(pass);
+                if (pass && pass.length >= 6) users[currentUser].passwordHash = hashPassword(pass, currentUser);
                 else if (pass && pass.length < 6) { showToast('Пароль не менее 6 символов', 'error'); return; }
                 if (MASTER_KEY) secureSetItem('bankUsers', users);
                 removeModals();
@@ -2623,15 +2591,23 @@
                 if (!currentUser) return;
                 if (!confirm('⚠️ ПОЛНОСТЬЮ удалить аккаунт? Это НЕОБРАТИМО!')) return;
                 if (!confirm('Подтвердите удаление.')) return;
-                delete users[currentUser];
-                delete bktokBalances[currentUser];
-                delete frozenBalances[currentUser];
-                delete allSupportChats[currentUser];
-                delete userTasks[currentUser];
-                delete savedAccounts[currentUser];
-                bktokOrders.buy = bktokOrders.buy.filter(o => o.user !== currentUser);
-                bktokOrders.sell = bktokOrders.sell.filter(o => o.user !== currentUser);
-                Object.keys(privateChats).forEach(id => { if (id.includes(currentUser)) delete privateChats[id]; });
+                
+                const username = currentUser;
+                
+                delete users[username];
+                delete bktokBalances[username];
+                delete frozenBalances[username];
+                delete allSupportChats[username];
+                delete userTasks[username];
+                delete savedAccounts[username];
+                
+                bktokOrders.buy = bktokOrders.buy.filter(o => o.user !== username);
+                bktokOrders.sell = bktokOrders.sell.filter(o => o.user !== username);
+                
+                Object.keys(privateChats).forEach(id => { 
+                    if (id.includes(username)) delete privateChats[id]; 
+                });
+                
                 if (MASTER_KEY) {
                     secureSetItem('bankUsers', users);
                     secureSetItem('bktokBalances', bktokBalances);
@@ -2641,14 +2617,18 @@
                     secureSetItem('bktokOrders', bktokOrders);
                     secureSetItem('privateChats', privateChats);
                 }
+                
                 realSetItem('savedAccounts', JSON.stringify(savedAccounts));
                 realRemoveItem('currentSession');
                 realRemoveItem('MASTER_KEY');
+                
                 MASTER_KEY = null;
                 currentUser = null;
+                
                 updateUIForAuth();
+                hideAllSections();
+                document.getElementById('about-section')?.classList.remove('hidden');
                 showToast('Аккаунт удален', 'info');
-                toggleSection('about');
             }
 
             function showBackupModal() {
@@ -2746,7 +2726,7 @@
                 document.body.appendChild(modal);
             }
 
-            async function login() {
+            function login() {
                 const username = document.getElementById('loginUsername')?.value.trim();
                 const password = document.getElementById('loginPassword')?.value;
                 const errorEl = document.getElementById('loginError');
@@ -2773,7 +2753,7 @@
                 const foundUser = users[username] ? username : Object.keys(users).find(u => users[u].phone === username);
                 if (!foundUser || !users[foundUser]) { MASTER_KEY = null; return showError(errorEl,
                     'Пользователь не найден'); }
-                if (!constantTimeCompare(users[foundUser].passwordHash, hashPassword(password))) { MASTER_KEY = null;
+                if (!constantTimeCompare(users[foundUser].passwordHash, hashPassword(password, foundUser))) { MASTER_KEY = null;
                     failedAttempts++;
                     realSetItem('failedAttempts', failedAttempts); return showError(errorEl, 'Неверный пароль'); }
 
@@ -2866,7 +2846,7 @@
             function prevRegStep() { if (regStep > 1) { regStep--;
                     renderRegStep(document.querySelector('.modal-form')); } }
 
-            async function completeRegistration() {
+            function completeRegistration() {
                 const errorEl = document.getElementById('registerError');
                 const captcha = document.getElementById('captchaInput')?.value.trim();
                 if (!captcha) return showError(errorEl, 'Введите ответ');
@@ -2881,7 +2861,7 @@
                         null; return showError(errorEl, 'Телефон занят'); }
 
                 users = existingUsers;
-                users[username] = { name, email, phone, passwordHash: hashPassword(password), registrationDate: new Date()
+                users[username] = { name, email, phone, passwordHash: hashPassword(password, username), registrationDate: new Date()
                         .toISOString(), avatar: null };
                 secureSetItem('bankUsers', users);
                 currentUser = username;
@@ -2915,6 +2895,8 @@
                 updateUIForAuth();
                 removeModals();
                 document.getElementById('modal-overlay')?.remove();
+                hideAllSections();
+                document.getElementById('about-section')?.classList.remove('hidden');
             }
 
             function switchAccount() {
@@ -2925,6 +2907,8 @@
                 realRemoveItem('currentSession');
                 realRemoveItem('MASTER_KEY');
                 updateUIForAuth();
+                hideAllSections();
+                document.getElementById('about-section')?.classList.remove('hidden');
                 showLoginForm();
             }
 
@@ -2932,7 +2916,7 @@
 
             window.addEventListener('beforeunload', () => { if (currentUser && MASTER_KEY) saveSession(); });
 
-            window.onload = async () => {
+            window.onload = function() {
                 if (realGetItem('theme') === 'light') document.body.classList.add('light-theme');
 
                 const savedSession = realGetItem('currentSession');
@@ -2965,8 +2949,9 @@
                 }
 
                 updateUIForAuth();
-                toggleSection('about');
-                console.log('✅ BK-Bank v3.1 — Главный экран открыт, окно входа не показывается автоматически');
+                hideAllSections();
+                document.getElementById('about-section')?.classList.remove('hidden');
+                console.log('✅ BK-Bank v3.2 — Главный экран открыт');
             };
 
             window.toggleTheme = toggleTheme;
