@@ -73,12 +73,6 @@
         p, li, span, div { color: #ffffff; line-height: 1.6; font-size: 0.95rem; }
         .highlight { color: #FFD700; font-weight: 600; }
         .sensitive-data { transition: all 0.2s; }
-        .password-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); z-index: 10001; display: flex; align-items: center; justify-content: center; }
-        .password-box { background: #1a1a1a; border: 2px solid #FFD700; border-radius: 20px; padding: 30px; max-width: 350px; width: 90%; }
-        .password-box h3 { color: #FFD700; margin-bottom: 20px; text-align: center; }
-        .password-box input { width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,215,0,0.3); border-radius: 40px; color: white; font-size: 1rem; margin-bottom: 20px; }
-        .password-box input:focus { border-color: #FFD700; outline: none; }
-        .password-box button { width: 100%; padding: 14px; background: linear-gradient(135deg, #FFD700, #FFB300); border: none; border-radius: 40px; font-weight: 700; cursor: pointer; color: #0a0a0a; }
         .comparison-table { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
         .comparison-item { background: rgba(255,215,0,0.05); border-radius: 16px; padding: 15px; border: 1px solid rgba(255,215,0,0.1); transition: all 0.3s ease; }
         .comparison-item:hover { transform: scale(1.01); border-color: #FFD700; background: rgba(255,215,0,0.08); }
@@ -174,17 +168,6 @@
         .saved-account-name { font-weight: 600; color: #FFD700; }
         .saved-account-username { font-size: 0.85rem; opacity: 0.7; }
         .remove-account-btn { background: transparent; border: 1px solid #ff5e5e; color: #ff5e5e; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; }
-        .rollback-request { background: rgba(255,100,100,0.1); border: 1px solid #ff5e5e; border-radius: 12px; padding: 12px; margin: 10px 0; }
-        .rollback-actions { display: flex; gap: 8px; margin-top: 10px; }
-        .rollback-btn { background: transparent; border: 1px solid #ff5e5e; color: #ff5e5e; padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; }
-        .rollback-btn.accept { border-color: #4ade80; color: #4ade80; }
-        .rollback-btn:hover { opacity: 0.8; }
-        .pow-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: flex; align-items: center; justify-content: center; }
-        .pow-box { background: #1a1a1a; border: 2px solid #FFD700; border-radius: 20px; padding: 30px; text-align: center; max-width: 350px; }
-        .pow-box h3 { color: #FFD700; margin-bottom: 20px; }
-        .pow-progress { width: 100%; height: 8px; background: #333; border-radius: 4px; margin: 20px 0; overflow: hidden; }
-        .pow-progress-bar { height: 100%; background: #FFD700; width: 0%; transition: width 0.05s linear; }
-        .pow-status { color: #FFD700; font-size: 0.9rem; margin-top: 10px; }
         .backup-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); z-index: 10002; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.3s; }
         .backup-container { background: #1a1a1a; border: 2px solid #FFD700; border-radius: 30px; padding: 30px; max-width: 500px; width: 90%; max-height: 85vh; overflow-y: auto; animation: modalPop 0.4s; }
         .backup-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
@@ -296,9 +279,7 @@
             <div style="background:rgba(255,215,0,0.03); border-radius:16px; padding:18px;"><h4 style="color:#FFD700;">4. Безопасность</h4><p>Защита активов на уровне лучших мировых стандартов: многофакторная аутентификация, холодное хранение криптоактивов, страхование средств на карте. Ваш труд надёжно защищён.</p></div>
             <div style="background:rgba(255,215,0,0.03); border-radius:16px; padding:18px; grid-column: span 2;"><h4 style="color:#FFD700;">5. Сообщество</h4><p>Владельцы карт BK-Bank — это не просто клиенты. Это со-основатели ценности BK-Token. Ваша активность, ваши приглашения, ваше участие в жизни экосистемы напрямую влияют на курс токена. Мы строим экономику, где каждый участник — бенефициар.</p></div>
         </div>
-        
-        <!-- Блок "КАК НАЧАТЬ?" — скрывается для авторизованных -->
-        <div id="getting-started-block">
+        <div id="how-to-start-section">
             <h3>КАК НАЧАТЬ?</h3>
             <div style="display:flex; flex-wrap:wrap; gap:15px; margin:20px 0;">
                 <div style="flex:1; min-width:150px; background:rgba(255,215,0,0.03); border-radius:16px; padding:20px; text-align:center;"><div style="width:45px; height:45px; background:#FFD700; color:#0a0a0a; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.4rem; font-weight:700; margin:0 auto 15px;">1</div><h4 style="color:#FFD700;">Регистрация</h4><p>2 минуты — и вы в системе.</p></div>
@@ -433,12 +414,8 @@
     let requireCaptcha = false;
     let isStackExpanded = false;
     let selectedPrivateChat = null;
-    let devtoolsOpen = false;
-    let isTabActive = true;
     
     const BASE_SALT = "BK_SECURE_SALT_V2_2026";
-    const SALT = "BK_BANK_STATIC_SALT_2024";
-    const threshold = 160;
     
     const _realStorage = window.localStorage;
     function realGetItem(key) { return _realStorage.getItem(key); }
@@ -566,13 +543,11 @@
                 const sellerAvailable = getAvailableBalance(sell.user);
                 
                 if (buyerAvailable < amount * price + fee) {
-                    console.warn('Недостаточно средств у покупателя', buy.user);
                     i++;
                     continue;
                 }
                 
                 if (sellerAvailable < amount) {
-                    console.warn('Недостаточно BK у продавца', sell.user);
                     j++;
                     continue;
                 }
@@ -665,6 +640,7 @@
     function showMainContent() {
         document.querySelector('.main-container').classList.remove('hidden');
         document.querySelector('header').classList.remove('hidden');
+        updateHowToStartVisibility();
         toggleSection('about');
     }
     
@@ -676,13 +652,13 @@
         setTimeout(() => toast.remove(), 3000);
     }
     
-    function updateGettingStarted() {
-        const block = document.getElementById('getting-started-block');
-        if (block) {
+    function updateHowToStartVisibility() {
+        const howToStartSection = document.getElementById('how-to-start-section');
+        if (howToStartSection) {
             if (currentUser) {
-                block.classList.add('hidden');
+                howToStartSection.classList.add('hidden');
             } else {
-                block.classList.remove('hidden');
+                howToStartSection.classList.remove('hidden');
             }
         }
     }
@@ -719,7 +695,7 @@
             });
         }
         
-        updateGettingStarted();
+        updateHowToStartVisibility();
     }
     
     function saveSession() {
@@ -730,7 +706,6 @@
             };
             realSetItem('currentSession', JSON.stringify(sessionData));
             realSetItem('MASTER_KEY', MASTER_KEY);
-            console.log('✅ Сессия сохранена для', currentUser);
         }
     }
     
@@ -771,6 +746,7 @@
         switch(section) {
             case 'about':
                 document.getElementById('about-section')?.classList.remove('hidden');
+                updateHowToStartVisibility();
                 break;
             case 'services':
                 document.getElementById('services-section')?.classList.remove('hidden');
@@ -1058,7 +1034,7 @@
         
         if (side === 'buy') {
             if (available < totalCost) {
-                alert(`Недостаточно средств для покупки. Доступно: ${available.toFixed(2)} BK`);
+                alert(`Недостаточно средств. Доступно: ${available.toFixed(2)} BK`);
                 return;
             }
             if (!freezeBalance(currentUser, totalCost)) {
@@ -1389,8 +1365,6 @@
             <div class="profile-actions">
                 <button class="profile-action-btn" onclick="showEditProfileForm()">✏️ Редактировать профиль</button>
                 <button class="profile-action-btn" onclick="showBackupModal()">💾 Бекап / Восстановление</button>
-                <button class="profile-action-btn" onclick="depositTestRubles()" style="color: #4ade80;">💰 Пополнить тестовые 1 000 BK</button>
-                <button class="profile-action-btn" onclick="clearAllMyOrders()" style="color: #ff5e5e;">🔄 Сбросить все мои ордера</button>
                 <button class="profile-action-btn" onclick="destroyAccount()">⚠️ Удалить аккаунт</button>
             </div>
             <div class="profile-info">
@@ -1520,43 +1494,6 @@
             };
             reader.readAsDataURL(file);
         }
-    }
-    
-    function depositTestRubles() {
-        if (!currentUser) return;
-        bktokBalances[currentUser] = (bktokBalances[currentUser] || 0) + 1000;
-        if (MASTER_KEY) secureSetItem('bktokBalances', bktokBalances);
-        showToast('✅ Баланс пополнен на 1 000 BK', 'success');
-        showProfile();
-    }
-    
-    function clearAllMyOrders() {
-        if (!currentUser) return;
-        if (!confirm('⚠️ Отменить ВСЕ ваши активные ордера и вернуть замороженные средства?')) return;
-        
-        const myBuyOrders = bktokOrders.buy.filter(o => o.user === currentUser);
-        const mySellOrders = bktokOrders.sell.filter(o => o.user === currentUser);
-        
-        myBuyOrders.forEach(o => {
-            const fee = o.amount * o.price * 0.001;
-            const totalCost = o.amount * o.price + fee;
-            unfreezeBalance(currentUser, totalCost);
-        });
-        
-        mySellOrders.forEach(o => {
-            unfreezeBalance(currentUser, o.amount);
-        });
-        
-        bktokOrders.buy = bktokOrders.buy.filter(o => o.user !== currentUser);
-        bktokOrders.sell = bktokOrders.sell.filter(o => o.user !== currentUser);
-        
-        if (MASTER_KEY) {
-            secureSetItem('bktokOrders', bktokOrders);
-            secureSetItem('frozenBalances', frozenBalances);
-        }
-        
-        showToast('✅ Все ордера отменены, средства разморожены', 'success');
-        showProfile();
     }
     
     function destroyAccount() {
@@ -2055,14 +1992,10 @@
         const savedSession = realGetItem('currentSession');
         const savedMasterKey = realGetItem('MASTER_KEY');
         
-        console.log('🔄 Попытка восстановления сессии...');
-        
         if (savedSession && savedMasterKey) {
             try {
                 const sessionData = JSON.parse(savedSession);
                 MASTER_KEY = savedMasterKey;
-                
-                console.log('🔑 MASTER_KEY загружен из localStorage');
                 
                 const decryptedUsers = secureGetItem('bankUsers');
                 if (decryptedUsers && decryptedUsers[sessionData.username]) {
@@ -2076,21 +2009,15 @@
                     bktokTrades = secureGetItem('bktokTrades') || [];
                     userTasks = secureGetItem('userTasks') || {};
                     
-                    console.log('✅ Сессия успешно восстановлена для', currentUser);
                     showMainContent();
                     updateUIForAuth();
                     return;
-                } else {
-                    console.warn('⚠️ Не удалось расшифровать данные пользователя');
                 }
             } catch(e) {
-                console.error('❌ Ошибка восстановления сессии:', e);
                 MASTER_KEY = null;
                 realRemoveItem('MASTER_KEY');
                 realRemoveItem('currentSession');
             }
-        } else {
-            console.log('ℹ️ Нет сохраненной сессии');
         }
         
         showMainContent();
@@ -2125,14 +2052,10 @@
     window.completeRegistration = completeRegistration;
     window.nextRegStep = nextRegStep;
     window.prevRegStep = prevRegStep;
-    window.clearAllMyOrders = clearAllMyOrders;
-    window.depositTestRubles = depositTestRubles;
     window.showBackupModal = showBackupModal;
     window.closeBackupModal = closeBackupModal;
     window.exportBackup = exportBackup;
     window.importBackup = importBackup;
-    
-    console.log('✅ BK-Bank v2.7 — Блок "Как начать" скрывается после входа');
     
 })();
 </script>
