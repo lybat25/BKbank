@@ -1358,7 +1358,7 @@
                     @${escapeHtml(currentUser)}
                 </div>
                 <div style="display:flex; gap:8px; margin-left:auto;">
-                    <button style="background:transparent; border:1.5px solid #FFD700; color:#FFD700; padding:10px 20px; border-radius:30px; cursor:pointer; font-weight:600;" onclick="window.toggleSection('profile')">🔄 Сменить</button>
+                    <button style="background:transparent; border:1.5px solid #FFD700; color:#FFD700; padding:10px 20px; border-radius:30px; cursor:pointer; font-weight:600;" onclick="window.showAccountSwitcherModal()">🔄 Сменить</button>
                     <button style="background:transparent; border:1.5px solid #FFD700; color:#FFD700; padding:10px 20px; border-radius:30px; cursor:pointer; font-weight:600;" onclick="logout()">🚪 Выйти</button>
                 </div>
             </div>
@@ -1377,6 +1377,102 @@
         
         container.classList.remove('hidden');
         renderAccountSwitcher();
+    }
+    
+    function showAccountSwitcherModal() {
+        removeModals();
+        showModalOverlay();
+        
+        const accounts = Object.keys(savedAccounts).filter(u => u !== currentUser && users[u]);
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal-form';
+        modal.addEventListener('click', (e) => e.stopPropagation());
+        
+        let html = `
+            <div class="form-title">🔄 Сменить аккаунт</div>
+        `;
+        
+        if (accounts.length === 0) {
+            html += `<p style="text-align:center; padding:20px; color:#888;">Нет сохраненных аккаунтов</p>`;
+        } else {
+            html += `<div style="display:flex; flex-direction:column; gap:8px;">`;
+            accounts.forEach(acc => {
+                const user = users[acc];
+                html += `
+                    <div class="saved-account-item" onclick="switchToAccount('${acc}')" style="cursor:pointer;">
+                        <img src="${user.avatar || 'png/2025-01-30_17-50-13-Photoroom.png'}" alt="${escapeHtml(user.name)}">
+                        <div class="saved-account-info">
+                            <div class="saved-account-name">${escapeHtml(user.name)}</div>
+                            <div class="saved-account-username">@${escapeHtml(acc)}</div>
+                        </div>
+                        <button class="remove-account-btn" onclick="event.stopPropagation(); removeSavedAccount('${acc}')">Удалить</button>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        }
+        
+        html += `
+            <button class="gold-button" onclick="addNewAccount()">➕ Войти в другой аккаунт</button>
+            <button class="dark-button" onclick="closeAccountSwitcher()">Отмена</button>
+        `;
+        
+        modal.innerHTML = html;
+        document.body.appendChild(modal);
+    }
+    
+    function closeAccountSwitcher() {
+        removeModals();
+        document.getElementById('modal-overlay')?.remove();
+        showProfile();
+    }
+    
+    function switchToAccount(username) {
+        if (!users[username]) {
+            showToast('Аккаунт не найден', 'error');
+            return;
+        }
+        
+        if (currentUser) {
+            savedAccounts[currentUser] = true;
+            realSetItem('savedAccounts', JSON.stringify(savedAccounts));
+        }
+        
+        currentUser = username;
+        bktokBalances = secureGetItem('bktokBalances') || {};
+        frozenBalances = secureGetItem('frozenBalances') || {};
+        allSupportChats = secureGetItem('allSupportChats') || {};
+        privateChats = secureGetItem('privateChats') || {};
+        bktokOrders = secureGetItem('bktokOrders') || { buy: [], sell: [] };
+        bktokTrades = secureGetItem('bktokTrades') || [];
+        userTasks = secureGetItem('userTasks') || {};
+        
+        saveSession();
+        removeModals();
+        document.getElementById('modal-overlay')?.remove();
+        updateUIForAuth();
+        showProfile();
+        showToast(`Переключено на ${users[username].name}`, 'success');
+    }
+    
+    function addNewAccount() {
+        removeModals();
+        document.getElementById('modal-overlay')?.remove();
+        showLoginForm();
+    }
+    
+    function removeSavedAccount(username) {
+        delete savedAccounts[username];
+        realSetItem('savedAccounts', JSON.stringify(savedAccounts));
+        
+        const modal = document.querySelector('.modal-form');
+        if (modal) {
+            showAccountSwitcherModal();
+        } else {
+            renderAccountSwitcher();
+        }
+        showToast('Аккаунт удален из сохраненных', 'info');
     }
     
     function renderAccountSwitcher() {
@@ -1405,39 +1501,6 @@
                 `;
             }).join('')}
         `;
-    }
-    
-    function switchToAccount(username) {
-        if (!users[username]) {
-            showToast('Аккаунт не найден', 'error');
-            return;
-        }
-        
-        if (currentUser) {
-            savedAccounts[currentUser] = true;
-            realSetItem('savedAccounts', JSON.stringify(savedAccounts));
-        }
-        
-        currentUser = username;
-        bktokBalances = secureGetItem('bktokBalances') || {};
-        frozenBalances = secureGetItem('frozenBalances') || {};
-        allSupportChats = secureGetItem('allSupportChats') || {};
-        privateChats = secureGetItem('privateChats') || {};
-        bktokOrders = secureGetItem('bktokOrders') || { buy: [], sell: [] };
-        bktokTrades = secureGetItem('bktokTrades') || [];
-        userTasks = secureGetItem('userTasks') || {};
-        
-        saveSession();
-        updateUIForAuth();
-        showProfile();
-        showToast(`Переключено на ${users[username].name}`, 'success');
-    }
-    
-    function removeSavedAccount(username) {
-        delete savedAccounts[username];
-        realSetItem('savedAccounts', JSON.stringify(savedAccounts));
-        renderAccountSwitcher();
-        showToast('Аккаунт удален из сохраненных', 'info');
     }
     
     function showEditProfileForm() {
@@ -2013,8 +2076,11 @@
     window.showRegistrationForm = showRegistrationForm;
     window.login = login;
     window.logout = logout;
+    window.showAccountSwitcherModal = showAccountSwitcherModal;
     window.switchToAccount = switchToAccount;
     window.removeSavedAccount = removeSavedAccount;
+    window.addNewAccount = addNewAccount;
+    window.closeAccountSwitcher = closeAccountSwitcher;
     window.completeTask = completeTask;
     window.openCase = openCase;
     window.createOrder = createOrder;
