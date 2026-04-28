@@ -44,6 +44,8 @@
         .nav-link::after { content: ''; position: absolute; bottom: -3px; left: 50%; transform: translateX(-50%) scaleX(0); width: 70%; height: 2px; background: #FFD700; transition: transform 0.3s ease; border-radius: 2px; }
         .nav-link:hover { color: #FFD700; transform: translateY(-2px); }
         .nav-link:hover::after { transform: translateX(-50%) scaleX(1); }
+        .nav-link.active { color: #FFD700; }
+        .nav-link.active::after { transform: translateX(-50%) scaleX(1); }
         .auth-buttons { display: flex; gap: 8px; }
         .login-btn, .register-btn { background: transparent; border: 1.5px solid #FFD700; color: #FFD700; padding: 8px 16px; border-radius: 40px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.25s; position: relative; overflow: hidden; }
         .login-btn::before, .register-btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: #FFD700; transition: left 0.3s ease; z-index: -1; }
@@ -232,17 +234,17 @@
         <button class="theme-toggle" onclick="window.toggleTheme()">🌙 Тема</button>
     </div>
     <nav class="nav-links">
-        <button class="nav-link" onclick="window.toggleSection('about')">Главная</button>
-        <button class="nav-link" onclick="window.toggleSection('services')">Услуги</button>
-        <button class="nav-link" onclick="window.toggleSection('cards')">Карты</button>
-        <button class="nav-link" onclick="window.toggleSection('bktok')">BKtok</button>
-        <button class="nav-link" onclick="window.toggleSection('support')">Поддержка</button>
-        <button class="nav-link" onclick="window.toggleSection('chats')">Чаты</button>
+        <button class="nav-link" data-section="about" onclick="window.navigateTo('about')">Главная</button>
+        <button class="nav-link" data-section="services" onclick="window.navigateTo('services')">Услуги</button>
+        <button class="nav-link" data-section="cards" onclick="window.navigateTo('cards')">Карты</button>
+        <button class="nav-link" data-section="bktok" onclick="window.navigateTo('bktok')">BKtok</button>
+        <button class="nav-link" data-section="support" onclick="window.navigateTo('support')">Поддержка</button>
+        <button class="nav-link" data-section="chats" onclick="window.navigateTo('chats')">Чаты</button>
         <div class="auth-buttons" id="auth-buttons">
-            <button class="login-btn" onclick="window.showLoginForm()">Войти</button>
-            <button class="register-btn" onclick="window.showRegistrationForm()">Регистрация</button>
+            <button class="login-btn" onclick="window.openModal('login')">Войти</button>
+            <button class="register-btn" onclick="window.openModal('register')">Регистрация</button>
         </div>
-        <div class="profile-btn hidden" id="profile-btn-header" onclick="window.toggleSection('profile')">
+        <div class="profile-btn hidden" id="profile-btn-header" onclick="window.navigateTo('profile')">
             <img id="header-avatar" src="png/2025-01-30_17-50-13-Photoroom.png" alt="Аватар">
             <span id="header-username">Кабинет</span>
         </div>
@@ -291,7 +293,7 @@
                 <h2 style="font-size:2rem;">BK-BANK: ВАШ ТРУД — НАША ВАЛЮТА</h2>
                 <p style="font-size:1.1rem;">Присоединяйтесь к BK-Bank сегодня. Превратите свою ежедневную активность в растущий капитал.</p>
                 <p style="margin-top:15px; color:#FFD700; font-size:1.1rem;"><strong>BK-Bank. Ваш надёжный финансовый партнёр. Создавайте ценность. Управляйте будущим.</strong></p>
-                <button class="gold-button" style="width:auto; padding:16px 40px; margin-top:20px;" onclick="window.showRegistrationForm()">✨ Открыть счёт ✨</button>
+                <button class="gold-button" style="width:auto; padding:16px 40px; margin-top:20px;" onclick="window.openModal('register')">✨ Открыть счёт ✨</button>
             </div>
         </div>
     </div>
@@ -323,8 +325,8 @@
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:25px;">
                 <div><span style="color:#888; font-size:1rem;">Ваш баланс:</span><div class="token-balance sensitive-data" id="token-balance-display">0 BK</div></div>
                 <div style="display:flex; gap:10px;">
-                    <button class="gold-button" style="width:auto; padding:12px 24px;" onclick="window.toggleSection('tasks')">📋 Задания</button>
-                    <button class="gold-button" style="width:auto; padding:12px 24px;" onclick="window.toggleSection('cases')">🎁 Кейсы</button>
+                    <button class="gold-button" style="width:auto; padding:12px 24px;" onclick="window.navigateTo('tasks')">📋 Задания</button>
+                    <button class="gold-button" style="width:auto; padding:12px 24px;" onclick="window.navigateTo('cases')">🎁 Кейсы</button>
                 </div>
             </div>
             <div class="chart-container">
@@ -358,14 +360,14 @@
         <h2>📋 Задания</h2><div class="divider"></div>
         <div id="tasks-guest-message" style="text-align:center; padding:15px;">🔒 Войдите для просмотра</div>
         <div id="tasks-content"><div class="tasks-grid" id="tasks-container"></div></div>
-        <button class="gold-button" onclick="window.toggleSection('bktok')">← На биржу</button>
+        <button class="gold-button" onclick="window.navigateTo('bktok')">← На биржу</button>
     </div>
     
     <div id="cases-section" class="content-card hidden">
         <h2>🎁 Кейсы</h2><div class="divider"></div>
         <div id="cases-guest-message" style="text-align:center; padding:15px;">🔒 Войдите для открытия</div>
         <div id="cases-content"><div class="cases-grid" id="cases-container"></div></div>
-        <button class="gold-button" onclick="window.toggleSection('bktok')">← На биржу</button>
+        <button class="gold-button" onclick="window.navigateTo('bktok')">← На биржу</button>
     </div>
     
     <div id="support-section" class="content-card hidden">
@@ -381,7 +383,6 @@
     </div>
     
     <div id="profile-section" class="content-card hidden"></div>
-    <div id="public-profile-section" class="content-card hidden"></div>
 </main>
 
 <script>
@@ -392,6 +393,39 @@
         alert('Ошибка: CryptoJS не загружен!');
         return;
     }
+    
+    // ===== ЦЕНТРАЛИЗОВАННОЕ УПРАВЛЕНИЕ UI =====
+    const UI = {
+        currentSection: 'about',
+        isNavigating: false,
+        navigationDebounceTimer: null,
+        
+        setActiveSection(section) {
+            if (this.currentSection === section) return;
+            
+            document.querySelectorAll('.nav-link').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.section === section) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            this.currentSection = section;
+        },
+        
+        clearAllIntervals() {
+            if (chartInterval) {
+                clearInterval(chartInterval);
+                chartInterval = null;
+            }
+        },
+        
+        closeAllModals() {
+            document.querySelectorAll('.modal-form, .backup-modal').forEach(m => m.remove());
+            const overlay = document.getElementById('modal-overlay');
+            if (overlay) overlay.remove();
+        }
+    };
     
     let MASTER_KEY = null;
     let users = {};
@@ -641,7 +675,7 @@
         document.querySelector('.main-container').classList.remove('hidden');
         document.querySelector('header').classList.remove('hidden');
         updateHowToStartVisibility();
-        toggleSection('about');
+        navigateTo('about');
     }
     
     function showWelcomeMessage(name) {
@@ -709,82 +743,315 @@
         }
     }
     
-    function removeModals() {
-        document.querySelectorAll('.modal-form').forEach(m => m.remove());
-    }
-    
-    function showModalOverlay() {
-        const existing = document.getElementById('modal-overlay');
-        if (existing) existing.remove();
+    // ===== ЦЕНТРАЛИЗОВАННАЯ НАВИГАЦИЯ =====
+    function navigateTo(section) {
+        if (UI.isNavigating) return;
         
-        const overlay = document.createElement('div');
-        overlay.className = 'modal-overlay';
-        overlay.id = 'modal-overlay';
-        overlay.addEventListener('click', () => {
-            removeModals();
-            document.getElementById('modal-overlay')?.remove();
-        });
-        document.body.appendChild(overlay);
-    }
-    
-    function toggleSection(section) {
-        if (!currentUser && (section === 'profile' || section === 'chats' || 
-            section === 'bktok' || section === 'tasks' || section === 'cases')) {
-            showLoginForm();
+        UI.isNavigating = true;
+        
+        if (UI.currentSection === section && section !== 'profile') {
+            UI.isNavigating = false;
             return;
         }
         
-        ['about', 'services', 'cards', 'bktok', 'tasks', 'cases', 'support', 'chats', 'profile', 'public-profile'].forEach(id => {
-            document.getElementById(id + '-section')?.classList.add('hidden');
-        });
-        
-        if (section !== 'bktok' && chartInterval) {
-            clearInterval(chartInterval);
-            chartInterval = null;
+        if (!currentUser && ['profile', 'chats', 'bktok', 'tasks', 'cases'].includes(section)) {
+            UI.isNavigating = false;
+            openModal('login');
+            return;
         }
         
-        switch(section) {
-            case 'about':
+        UI.clearAllIntervals();
+        
+        ['about', 'services', 'cards', 'bktok', 'tasks', 'cases', 'support', 'chats', 'profile'].forEach(id => {
+            const el = document.getElementById(id + '-section');
+            if (el) el.classList.add('hidden');
+        });
+        
+        UI.setActiveSection(section);
+        
+        const sectionHandlers = {
+            'about': () => {
                 document.getElementById('about-section')?.classList.remove('hidden');
                 updateHowToStartVisibility();
-                break;
-            case 'services':
-                document.getElementById('services-section')?.classList.remove('hidden');
-                break;
-            case 'cards':
+            },
+            'services': () => document.getElementById('services-section')?.classList.remove('hidden'),
+            'cards': () => {
                 document.getElementById('cards-section')?.classList.remove('hidden');
                 renderCardsStack();
-                break;
-            case 'bktok':
+            },
+            'bktok': () => {
                 document.getElementById('bktok-section')?.classList.remove('hidden');
                 if (currentUser) {
                     loadBKtok();
                     startChartUpdates();
                 }
-                break;
-            case 'tasks':
+            },
+            'tasks': () => {
                 document.getElementById('tasks-section')?.classList.remove('hidden');
                 if (currentUser) renderTasks();
-                break;
-            case 'cases':
+            },
+            'cases': () => {
                 document.getElementById('cases-section')?.classList.remove('hidden');
                 if (currentUser) renderCases();
-                break;
-            case 'support':
+            },
+            'support': () => {
                 document.getElementById('support-section')?.classList.remove('hidden');
                 renderAISupport();
-                break;
-            case 'chats':
+            },
+            'chats': () => {
                 document.getElementById('chats-section')?.classList.remove('hidden');
                 if (currentUser) renderPrivateChats();
-                break;
-            case 'profile':
+            },
+            'profile': () => {
                 if (currentUser) {
+                    document.getElementById('profile-section')?.classList.remove('hidden');
                     showProfile();
                 } else {
-                    showLoginForm();
+                    openModal('login');
                 }
+            }
+        };
+        
+        if (sectionHandlers[section]) {
+            sectionHandlers[section]();
+        }
+        
+        setTimeout(() => {
+            UI.isNavigating = false;
+        }, 100);
+    }
+    
+    // ===== ЦЕНТРАЛИЗОВАННОЕ УПРАВЛЕНИЕ МОДАЛЬНЫМИ ОКНАМИ =====
+    function openModal(type, data = {}) {
+        UI.closeAllModals();
+        
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.id = 'modal-overlay';
+        overlay.addEventListener('click', () => {
+            UI.closeAllModals();
+            if (currentUser) {
+                navigateTo('about');
+            }
+        });
+        document.body.appendChild(overlay);
+        
+        switch(type) {
+            case 'login':
+                showLoginFormModal();
                 break;
+            case 'register':
+                showRegistrationFormModal();
+                break;
+            case 'accountSwitcher':
+                showAccountSwitcherModalContent();
+                break;
+            case 'editProfile':
+                showEditProfileFormModal(data.user);
+                break;
+            case 'backup':
+                showBackupModalContent();
+                break;
+        }
+    }
+    
+    function showLoginFormModal() {
+        requireCaptcha = failedAttempts >= 2;
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal-form';
+        modal.addEventListener('click', (e) => e.stopPropagation());
+        
+        let html = `
+            <div class="form-title">🔐 Вход в BK-Bank</div>
+            <div id="loginError" class="error-text hidden"></div>
+            <input id="loginUsername" class="form-input" placeholder="👤 Никнейм или телефон">
+            <input type="password" id="loginPassword" class="form-input" placeholder="🔑 Пароль">
+        `;
+        
+        if (requireCaptcha) {
+            const ops = ['+', '-', '×'];
+            const op = ops[Math.floor(Math.random() * ops.length)];
+            let n1, n2, ans;
+            
+            if (op === '+') { n1 = Math.floor(Math.random() * 20) + 1; n2 = Math.floor(Math.random() * 20) + 1; ans = n1 + n2; }
+            else if (op === '-') { n1 = Math.floor(Math.random() * 20) + 11; n2 = Math.floor(Math.random() * 10) + 1; ans = n1 - n2; }
+            else { n1 = Math.floor(Math.random() * 10) + 1; n2 = Math.floor(Math.random() * 10) + 1; ans = n1 * n2; }
+            
+            loginCaptchaAnswer = ans;
+            html += `
+                <div class="captcha-box">
+                    <div style="font-size:1rem; color:#888; margin-bottom:10px;">🤖 Подтвердите, что вы человек</div>
+                    <div class="captcha-question"><span class="captcha-emoji">🧮</span> ${n1} ${op} ${n2} = ?</div>
+                    <input id="loginCaptcha" class="form-input" placeholder="Введите ответ" style="text-align:center;">
+                </div>
+            `;
+        }
+        
+        html += `
+            <button class="gold-button" onclick="window.login()">🚪 Войти</button>
+            <span class="text-link" onclick="window.openModal('register')">✨ Создать аккаунт</span>
+        `;
+        
+        modal.innerHTML = html;
+        document.body.appendChild(modal);
+    }
+    
+    function showRegistrationFormModal() {
+        regStep = 1;
+        regData = {};
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal-form';
+        modal.addEventListener('click', (e) => e.stopPropagation());
+        renderRegStepInModal(modal);
+    }
+    
+    function renderRegStepInModal(modal) {
+        let html = `
+            <div class="form-title">📝 Регистрация</div>
+            <div class="step-indicator">
+                ${[1,2,3].map(i => `
+                    <div class="step-dot ${i === regStep ? 'active' : ''} ${i < regStep ? 'completed' : ''}"></div>
+                `).join('')}
+            </div>
+            <div id="registerError" class="error-text hidden"></div>
+        `;
+        
+        if (regStep === 1) {
+            html += `
+                <input id="regName" class="form-input" placeholder="👤 Ваше имя" value="${escapeHtml(regData.name || '')}">
+                <input id="regUsername" class="form-input" placeholder="📛 Никнейм" value="${escapeHtml(regData.username || '')}">
+                <input type="password" id="regPassword" class="form-input" placeholder="🔒 Пароль">
+                <input type="password" id="regConfirm" class="form-input" placeholder="🔒 Подтвердите пароль">
+                <button class="gold-button" onclick="window.nextRegStep()">Далее →</button>
+            `;
+        } else if (regStep === 2) {
+            html += `
+                <input id="regEmail" class="form-input" placeholder="📧 Email" value="${escapeHtml(regData.email || '')}">
+                <input id="regPhone" class="form-input" placeholder="📱 Телефон +7..." value="${escapeHtml(regData.phone || '+7')}">
+                <button class="gold-button" onclick="window.nextRegStep()">Далее →</button>
+                <button class="dark-button" onclick="window.prevRegStep()">← Назад</button>
+            `;
+        } else {
+            const n1 = Math.floor(Math.random() * 15) + 1;
+            const n2 = Math.floor(Math.random() * 15) + 1;
+            captchaAnswer = n1 + n2;
+            
+            html += `
+                <div class="captcha-box">
+                    <div style="font-size:1rem; color:#888; margin-bottom:10px;">🔐 Проверка безопасности</div>
+                    <div class="captcha-question"><span class="captcha-emoji">🔢</span> ${n1} + ${n2} = ?</div>
+                    <input id="captchaInput" class="form-input" placeholder="Введите ответ" style="text-align:center;">
+                </div>
+                <button class="gold-button" onclick="window.completeRegistration()">✅ Зарегистрироваться</button>
+                <button class="dark-button" onclick="window.prevRegStep()">← Назад</button>
+            `;
+        }
+        
+        html += `<span class="text-link" onclick="window.openModal('login')">← Уже есть аккаунт</span>`;
+        modal.innerHTML = html;
+        
+        const existing = document.querySelector('.modal-form');
+        if (existing) existing.remove();
+        document.body.appendChild(modal);
+    }
+    
+    function showAccountSwitcherModalContent() {
+        const accounts = Object.keys(savedAccounts).filter(u => u !== currentUser && users[u]);
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal-form';
+        modal.addEventListener('click', (e) => e.stopPropagation());
+        
+        let html = `<div class="form-title">🔄 Сменить аккаунт</div>`;
+        
+        if (accounts.length === 0) {
+            html += `<p style="text-align:center; padding:20px; color:#888;">Нет сохраненных аккаунтов</p>`;
+        } else {
+            html += `<div style="display:flex; flex-direction:column; gap:8px;">`;
+            accounts.forEach(acc => {
+                const user = users[acc];
+                html += `
+                    <div class="saved-account-item" onclick="window.switchToAccount('${acc}')" style="cursor:pointer;">
+                        <img src="${user.avatar || 'png/2025-01-30_17-50-13-Photoroom.png'}" alt="${escapeHtml(user.name)}">
+                        <div class="saved-account-info">
+                            <div class="saved-account-name">${escapeHtml(user.name)}</div>
+                            <div class="saved-account-username">@${escapeHtml(acc)}</div>
+                        </div>
+                        <button class="remove-account-btn" onclick="event.stopPropagation(); window.removeSavedAccountInModal('${acc}')">Удалить</button>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        }
+        
+        html += `
+            <button class="gold-button" onclick="window.addNewAccount()">➕ Войти в другой аккаунт</button>
+            <button class="dark-button" onclick="window.closeModalAndGoToProfile()">Отмена</button>
+        `;
+        
+        modal.innerHTML = html;
+        document.body.appendChild(modal);
+    }
+    
+    function showEditProfileFormModal(user) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-form';
+        modal.addEventListener('click', (e) => e.stopPropagation());
+        
+        modal.innerHTML = `
+            <div class="form-title">Редактирование</div>
+            <input id="editName" class="form-input" placeholder="Имя" value="${escapeHtml(user.name || '')}">
+            <input id="editEmail" class="form-input" placeholder="Email" value="${escapeHtml(user.email || '')}">
+            <input id="editPhone" class="form-input" placeholder="Телефон" value="${escapeHtml(user.phone || '')}">
+            <input type="password" id="editPassword" class="form-input" placeholder="Новый пароль">
+            <button class="gold-button" onclick="window.saveProfile()">Сохранить</button>
+            <button class="dark-button" onclick="window.closeModalAndGoToProfile()">Отмена</button>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+    
+    function showBackupModalContent() {
+        const modal = document.createElement('div');
+        modal.className = 'backup-modal';
+        modal.addEventListener('click', (e) => e.stopPropagation());
+        
+        modal.innerHTML = `
+            <div class="backup-container">
+                <div class="backup-header">
+                    <h2>💾 Бекап данных</h2>
+                    <button class="backup-close" onclick="window.closeModalAndGoToProfile()">&times;</button>
+                </div>
+                <div class="backup-info-card">
+                    <div class="backup-info-item"><span>Аккаунт:</span><strong>${escapeHtml(currentUser)}</strong></div>
+                    <div class="backup-info-item"><span>Баланс:</span><strong>${bktokBalances[currentUser] || 0} BK</strong></div>
+                    <div class="backup-info-item"><span>Создан:</span><strong>${new Date(users[currentUser].registrationDate).toLocaleDateString()}</strong></div>
+                </div>
+                <div class="backup-section">
+                    <h3>📤 Экспорт данных</h3>
+                    <button class="backup-btn backup-btn-primary" onclick="window.exportBackup()">Скачать файл бекапа</button>
+                    <p style="margin-top:10px; font-size:0.85rem; opacity:0.7;">Файл содержит зашифрованные данные вашего аккаунта</p>
+                </div>
+                <div class="backup-section">
+                    <h3>📥 Импорт данных</h3>
+                    <label class="backup-file-label">
+                        <input type="file" id="backupFileInput" accept=".json" style="display:none;" onchange="window.importBackup(event)">
+                        Выбрать файл бекапа
+                    </label>
+                    <p class="backup-warning">⚠️ Внимание! Импорт перезапишет текущие данные аккаунта!</p>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+    
+    function closeModalAndGoToProfile() {
+        UI.closeAllModals();
+        if (currentUser) {
+            navigateTo('profile');
         }
     }
     
@@ -878,7 +1145,7 @@
     function startChartUpdates() {
         if (chartInterval) clearInterval(chartInterval);
         chartInterval = setInterval(() => {
-            if (currentUser && !document.getElementById('bktok-section')?.classList.contains('hidden')) {
+            if (currentUser && UI.currentSection === 'bktok') {
                 renderChart();
             }
         }, 3000);
@@ -1358,13 +1625,13 @@
                     @${escapeHtml(currentUser)}
                 </div>
                 <div style="display:flex; gap:8px; margin-left:auto;">
-                    <button style="background:transparent; border:1.5px solid #FFD700; color:#FFD700; padding:10px 20px; border-radius:30px; cursor:pointer; font-weight:600;" onclick="window.showAccountSwitcherModal()">🔄 Сменить</button>
+                    <button style="background:transparent; border:1.5px solid #FFD700; color:#FFD700; padding:10px 20px; border-radius:30px; cursor:pointer; font-weight:600;" onclick="window.openModal('accountSwitcher')">🔄 Сменить</button>
                     <button style="background:transparent; border:1.5px solid #FFD700; color:#FFD700; padding:10px 20px; border-radius:30px; cursor:pointer; font-weight:600;" onclick="logout()">🚪 Выйти</button>
                 </div>
             </div>
             <div class="profile-actions">
-                <button class="profile-action-btn" onclick="showEditProfileForm()">✏️ Редактировать профиль</button>
-                <button class="profile-action-btn" onclick="showBackupModal()">💾 Бекап / Восстановление</button>
+                <button class="profile-action-btn" onclick="window.openModal('editProfile', {user: window.getCurrentUserData()})">✏️ Редактировать профиль</button>
+                <button class="profile-action-btn" onclick="window.openModal('backup')">💾 Бекап / Восстановление</button>
                 <button class="profile-action-btn" onclick="destroyAccount()">⚠️ Удалить аккаунт</button>
             </div>
             <div class="profile-info">
@@ -1372,60 +1639,13 @@
                 <p style="font-size:1rem;">📱 ${escapeHtml(user.phone || 'Не указан')}</p>
                 <p style="font-size:1rem;" class="sensitive-data">💰 ${bktokBalances[currentUser] || 0} BK</p>
             </div>
-            <div class="account-switcher" id="account-switcher"></div>
         `;
         
         container.classList.remove('hidden');
-        renderAccountSwitcher();
     }
     
-    function showAccountSwitcherModal() {
-        removeModals();
-        showModalOverlay();
-        
-        const accounts = Object.keys(savedAccounts).filter(u => u !== currentUser && users[u]);
-        
-        const modal = document.createElement('div');
-        modal.className = 'modal-form';
-        modal.addEventListener('click', (e) => e.stopPropagation());
-        
-        let html = `
-            <div class="form-title">🔄 Сменить аккаунт</div>
-        `;
-        
-        if (accounts.length === 0) {
-            html += `<p style="text-align:center; padding:20px; color:#888;">Нет сохраненных аккаунтов</p>`;
-        } else {
-            html += `<div style="display:flex; flex-direction:column; gap:8px;">`;
-            accounts.forEach(acc => {
-                const user = users[acc];
-                html += `
-                    <div class="saved-account-item" onclick="switchToAccount('${acc}')" style="cursor:pointer;">
-                        <img src="${user.avatar || 'png/2025-01-30_17-50-13-Photoroom.png'}" alt="${escapeHtml(user.name)}">
-                        <div class="saved-account-info">
-                            <div class="saved-account-name">${escapeHtml(user.name)}</div>
-                            <div class="saved-account-username">@${escapeHtml(acc)}</div>
-                        </div>
-                        <button class="remove-account-btn" onclick="event.stopPropagation(); removeSavedAccount('${acc}')">Удалить</button>
-                    </div>
-                `;
-            });
-            html += `</div>`;
-        }
-        
-        html += `
-            <button class="gold-button" onclick="addNewAccount()">➕ Войти в другой аккаунт</button>
-            <button class="dark-button" onclick="closeAccountSwitcher()">Отмена</button>
-        `;
-        
-        modal.innerHTML = html;
-        document.body.appendChild(modal);
-    }
-    
-    function closeAccountSwitcher() {
-        removeModals();
-        document.getElementById('modal-overlay')?.remove();
-        showProfile();
+    function getCurrentUserData() {
+        return users[currentUser];
     }
     
     function switchToAccount(username) {
@@ -1449,82 +1669,22 @@
         userTasks = secureGetItem('userTasks') || {};
         
         saveSession();
-        removeModals();
-        document.getElementById('modal-overlay')?.remove();
+        UI.closeAllModals();
         updateUIForAuth();
-        showProfile();
+        navigateTo('profile');
         showToast(`Переключено на ${users[username].name}`, 'success');
     }
     
-    function addNewAccount() {
-        removeModals();
-        document.getElementById('modal-overlay')?.remove();
-        showLoginForm();
-    }
-    
-    function removeSavedAccount(username) {
+    function removeSavedAccountInModal(username) {
         delete savedAccounts[username];
         realSetItem('savedAccounts', JSON.stringify(savedAccounts));
-        
-        const modal = document.querySelector('.modal-form');
-        if (modal) {
-            showAccountSwitcherModal();
-        } else {
-            renderAccountSwitcher();
-        }
+        openModal('accountSwitcher');
         showToast('Аккаунт удален из сохраненных', 'info');
     }
     
-    function renderAccountSwitcher() {
-        const container = document.getElementById('account-switcher');
-        if (!container) return;
-        
-        const accounts = Object.keys(savedAccounts).filter(u => u !== currentUser && users[u]);
-        if (accounts.length === 0) {
-            container.innerHTML = '<p style="color:#888; text-align:center;">Нет сохраненных аккаунтов</p>';
-            return;
-        }
-        
-        container.innerHTML = `
-            <h4 style="color:#FFD700; margin-bottom:15px;">Сохраненные аккаунты</h4>
-            ${accounts.map(acc => {
-                const user = users[acc];
-                return `
-                    <div class="saved-account-item" onclick="switchToAccount('${acc}')">
-                        <img src="${user.avatar || 'png/2025-01-30_17-50-13-Photoroom.png'}" alt="${escapeHtml(user.name)}">
-                        <div class="saved-account-info">
-                            <div class="saved-account-name">${escapeHtml(user.name)}</div>
-                            <div class="saved-account-username">@${escapeHtml(acc)}</div>
-                        </div>
-                        <button class="remove-account-btn" onclick="event.stopPropagation(); removeSavedAccount('${acc}')">Удалить</button>
-                    </div>
-                `;
-            }).join('')}
-        `;
-    }
-    
-    function showEditProfileForm() {
-        const user = users[currentUser];
-        removeModals();
-        
-        const modal = document.createElement('div');
-        modal.className = 'modal-form';
-        modal.innerHTML = `
-            <div class="form-title">Редактирование</div>
-            <input id="editName" class="form-input" placeholder="Имя" value="${escapeHtml(user.name || '')}">
-            <input id="editEmail" class="form-input" placeholder="Email" value="${escapeHtml(user.email || '')}">
-            <input id="editPhone" class="form-input" placeholder="Телефон" value="${escapeHtml(user.phone || '')}">
-            <input type="password" id="editPassword" class="form-input" placeholder="Новый пароль">
-            <button class="gold-button" onclick="saveProfile()">Сохранить</button>
-            <button class="dark-button" onclick="cancelEditProfile()">Отмена</button>
-        `;
-        
-        document.body.appendChild(modal);
-    }
-    
-    function cancelEditProfile() {
-        removeModals();
-        showProfile();
+    function addNewAccount() {
+        UI.closeAllModals();
+        openModal('login');
     }
     
     function saveProfile() {
@@ -1540,8 +1700,8 @@
         
         if (MASTER_KEY) secureSetItem('bankUsers', users);
         
-        removeModals();
-        showProfile();
+        UI.closeAllModals();
+        navigateTo('profile');
         showWelcomeMessage('Профиль обновлён!');
     }
     
@@ -1552,7 +1712,7 @@
             reader.onload = (ev) => {
                 users[currentUser].avatar = ev.target.result;
                 if (MASTER_KEY) secureSetItem('bankUsers', users);
-                showProfile();
+                navigateTo('profile');
                 updateUIForAuth();
             };
             reader.readAsDataURL(file);
@@ -1573,49 +1733,6 @@
             realSetItem('savedAccounts', JSON.stringify(savedAccounts));
             logout();
         }
-    }
-    
-    function showBackupModal() {
-        removeModals();
-        showModalOverlay();
-        
-        const modal = document.createElement('div');
-        modal.className = 'backup-modal';
-        modal.addEventListener('click', (e) => e.stopPropagation());
-        
-        modal.innerHTML = `
-            <div class="backup-container">
-                <div class="backup-header">
-                    <h2>💾 Бекап данных</h2>
-                    <button class="backup-close" onclick="closeBackupModal()">&times;</button>
-                </div>
-                <div class="backup-info-card">
-                    <div class="backup-info-item"><span>Аккаунт:</span><strong>${escapeHtml(currentUser)}</strong></div>
-                    <div class="backup-info-item"><span>Баланс:</span><strong>${bktokBalances[currentUser] || 0} BK</strong></div>
-                    <div class="backup-info-item"><span>Создан:</span><strong>${new Date(users[currentUser].registrationDate).toLocaleDateString()}</strong></div>
-                </div>
-                <div class="backup-section">
-                    <h3>📤 Экспорт данных</h3>
-                    <button class="backup-btn backup-btn-primary" onclick="exportBackup()">Скачать файл бекапа</button>
-                    <p style="margin-top:10px; font-size:0.85rem; opacity:0.7;">Файл содержит зашифрованные данные вашего аккаунта</p>
-                </div>
-                <div class="backup-section">
-                    <h3>📥 Импорт данных</h3>
-                    <label class="backup-file-label">
-                        <input type="file" id="backupFileInput" accept=".json" style="display:none;" onchange="importBackup(event)">
-                        Выбрать файл бекапа
-                    </label>
-                    <p class="backup-warning">⚠️ Внимание! Импорт перезапишет текущие данные аккаунта!</p>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-    }
-    
-    function closeBackupModal() {
-        document.querySelector('.backup-modal')?.remove();
-        document.getElementById('modal-overlay')?.remove();
     }
     
     function exportBackup() {
@@ -1683,8 +1800,7 @@
                 }
                 
                 showToast('✅ Данные успешно импортированы!', 'success');
-                closeBackupModal();
-                showProfile();
+                closeModalAndGoToProfile();
                 
             } catch (error) {
                 showToast('❌ Ошибка импорта: ' + error.message, 'error');
@@ -1692,61 +1808,6 @@
         };
         
         reader.readAsDataURL(file);
-    }
-    
-    function showLoginForm() {
-        removeModals();
-        showModalOverlay();
-        
-        requireCaptcha = failedAttempts >= 2;
-        
-        const modal = document.createElement('div');
-        modal.className = 'modal-form';
-        modal.addEventListener('click', (e) => e.stopPropagation());
-        
-        let html = `
-            <div class="form-title">🔐 Вход в BK-Bank</div>
-            <div id="loginError" class="error-text hidden"></div>
-            <input id="loginUsername" class="form-input" placeholder="👤 Никнейм или телефон">
-            <input type="password" id="loginPassword" class="form-input" placeholder="🔑 Пароль">
-        `;
-        
-        if (requireCaptcha) {
-            const ops = ['+', '-', '×'];
-            const op = ops[Math.floor(Math.random() * ops.length)];
-            let n1, n2, ans;
-            
-            if (op === '+') {
-                n1 = Math.floor(Math.random() * 20) + 1;
-                n2 = Math.floor(Math.random() * 20) + 1;
-                ans = n1 + n2;
-            } else if (op === '-') {
-                n1 = Math.floor(Math.random() * 20) + 11;
-                n2 = Math.floor(Math.random() * 10) + 1;
-                ans = n1 - n2;
-            } else {
-                n1 = Math.floor(Math.random() * 10) + 1;
-                n2 = Math.floor(Math.random() * 10) + 1;
-                ans = n1 * n2;
-            }
-            
-            loginCaptchaAnswer = ans;
-            html += `
-                <div class="captcha-box">
-                    <div style="font-size:1rem; color:#888; margin-bottom:10px;">🤖 Подтвердите, что вы человек</div>
-                    <div class="captcha-question"><span class="captcha-emoji">🧮</span> ${n1} ${op} ${n2} = ?</div>
-                    <input id="loginCaptcha" class="form-input" placeholder="Введите ответ" style="text-align:center;">
-                </div>
-            `;
-        }
-        
-        html += `
-            <button class="gold-button" onclick="login()">🚪 Войти</button>
-            <span class="text-link" onclick="showRegistrationForm()">✨ Создать аккаунт</span>
-        `;
-        
-        modal.innerHTML = html;
-        document.body.appendChild(modal);
     }
     
     async function login() {
@@ -1766,7 +1827,7 @@
             if (parseInt(captcha) !== loginCaptchaAnswer) {
                 failedAttempts++;
                 realSetItem('failedAttempts', failedAttempts);
-                showLoginForm();
+                openModal('login');
                 return showError(errorEl, 'Неверная капча');
             }
         }
@@ -1818,8 +1879,7 @@
         }
         
         saveSession();
-        removeModals();
-        document.getElementById('modal-overlay')?.remove();
+        UI.closeAllModals();
         
         showMainContent();
         showWelcomeMessage(users[foundUser].name);
@@ -1829,68 +1889,6 @@
     let regStep = 1;
     let regData = {};
     let captchaAnswer = 0;
-    
-    function showRegistrationForm() {
-        removeModals();
-        showModalOverlay();
-        regStep = 1;
-        regData = {};
-        
-        const modal = document.createElement('div');
-        modal.className = 'modal-form';
-        modal.addEventListener('click', (e) => e.stopPropagation());
-        renderRegStep(modal);
-    }
-    
-    function renderRegStep(modal) {
-        let html = `
-            <div class="form-title">📝 Регистрация</div>
-            <div class="step-indicator">
-                ${[1,2,3].map(i => `
-                    <div class="step-dot ${i === regStep ? 'active' : ''} ${i < regStep ? 'completed' : ''}"></div>
-                `).join('')}
-            </div>
-            <div id="registerError" class="error-text hidden"></div>
-        `;
-        
-        if (regStep === 1) {
-            html += `
-                <input id="regName" class="form-input" placeholder="👤 Ваше имя" value="${escapeHtml(regData.name || '')}">
-                <input id="regUsername" class="form-input" placeholder="📛 Никнейм" value="${escapeHtml(regData.username || '')}">
-                <input type="password" id="regPassword" class="form-input" placeholder="🔒 Пароль">
-                <input type="password" id="regConfirm" class="form-input" placeholder="🔒 Подтвердите пароль">
-                <button class="gold-button" onclick="nextRegStep()">Далее →</button>
-            `;
-        } else if (regStep === 2) {
-            html += `
-                <input id="regEmail" class="form-input" placeholder="📧 Email" value="${escapeHtml(regData.email || '')}">
-                <input id="regPhone" class="form-input" placeholder="📱 Телефон +7..." value="${escapeHtml(regData.phone || '+7')}">
-                <button class="gold-button" onclick="nextRegStep()">Далее →</button>
-                <button class="dark-button" onclick="prevRegStep()">← Назад</button>
-            `;
-        } else {
-            const n1 = Math.floor(Math.random() * 15) + 1;
-            const n2 = Math.floor(Math.random() * 15) + 1;
-            captchaAnswer = n1 + n2;
-            
-            html += `
-                <div class="captcha-box">
-                    <div style="font-size:1rem; color:#888; margin-bottom:10px;">🔐 Проверка безопасности</div>
-                    <div class="captcha-question"><span class="captcha-emoji">🔢</span> ${n1} + ${n2} = ?</div>
-                    <input id="captchaInput" class="form-input" placeholder="Введите ответ" style="text-align:center;">
-                </div>
-                <button class="gold-button" onclick="completeRegistration()">✅ Зарегистрироваться</button>
-                <button class="dark-button" onclick="prevRegStep()">← Назад</button>
-            `;
-        }
-        
-        html += `<span class="text-link" onclick="showLoginForm()">← Уже есть аккаунт</span>`;
-        modal.innerHTML = html;
-        
-        const existing = document.querySelector('.modal-form');
-        if (existing) existing.remove();
-        document.body.appendChild(modal);
-    }
     
     function nextRegStep() {
         const errorEl = document.getElementById('registerError');
@@ -1913,7 +1911,7 @@
             
             regData = { name, username, password };
             regStep = 2;
-            renderRegStep(document.querySelector('.modal-form'));
+            renderRegStepInModal(document.querySelector('.modal-form'));
             
         } else if (regStep === 2) {
             const email = document.getElementById('regEmail').value.trim();
@@ -1929,13 +1927,13 @@
             regData.email = email || '';
             regData.phone = phone || '+70000000000';
             regStep = 3;
-            renderRegStep(document.querySelector('.modal-form'));
+            renderRegStepInModal(document.querySelector('.modal-form'));
         }
     }
     
     function prevRegStep() {
         regStep--;
-        renderRegStep(document.querySelector('.modal-form'));
+        renderRegStepInModal(document.querySelector('.modal-form'));
     }
     
     async function completeRegistration() {
@@ -1993,8 +1991,7 @@
         realSetItem('savedAccounts', JSON.stringify(savedAccounts));
         
         saveSession();
-        removeModals();
-        document.getElementById('modal-overlay')?.remove();
+        UI.closeAllModals();
         
         showMainContent();
         showWelcomeMessage(name);
@@ -2002,7 +1999,8 @@
     }
     
     function logout() {
-        if (chartInterval) clearInterval(chartInterval);
+        UI.clearAllIntervals();
+        UI.closeAllModals();
         
         if (currentUser) {
             users[currentUser].isLoggedIn = false;
@@ -2018,7 +2016,7 @@
         updateUIForAuth();
         document.querySelector('.main-container').classList.add('hidden');
         document.querySelector('header').classList.add('hidden');
-        showLoginForm();
+        openModal('login');
     }
     
     loadUnencryptedData();
@@ -2067,20 +2065,19 @@
         
         showMainContent();
         updateUIForAuth();
-        toggleSection('about');
+        navigateTo('about');
     };
     
+    // ===== ГЛОБАЛЬНЫЕ ФУНКЦИИ =====
     window.toggleTheme = toggleTheme;
-    window.toggleSection = toggleSection;
-    window.showLoginForm = showLoginForm;
-    window.showRegistrationForm = showRegistrationForm;
+    window.navigateTo = navigateTo;
+    window.openModal = openModal;
+    window.closeModalAndGoToProfile = closeModalAndGoToProfile;
     window.login = login;
     window.logout = logout;
-    window.showAccountSwitcherModal = showAccountSwitcherModal;
     window.switchToAccount = switchToAccount;
-    window.removeSavedAccount = removeSavedAccount;
+    window.removeSavedAccountInModal = removeSavedAccountInModal;
     window.addNewAccount = addNewAccount;
-    window.closeAccountSwitcher = closeAccountSwitcher;
     window.completeTask = completeTask;
     window.openCase = openCase;
     window.createOrder = createOrder;
@@ -2091,18 +2088,15 @@
     window.startNewChat = startNewChat;
     window.openPrivateChat = openPrivateChat;
     window.sendPrivateMessage = sendPrivateMessage;
-    window.showEditProfileForm = showEditProfileForm;
-    window.cancelEditProfile = cancelEditProfile;
     window.saveProfile = saveProfile;
     window.uploadAvatar = uploadAvatar;
     window.destroyAccount = destroyAccount;
     window.completeRegistration = completeRegistration;
     window.nextRegStep = nextRegStep;
     window.prevRegStep = prevRegStep;
-    window.showBackupModal = showBackupModal;
-    window.closeBackupModal = closeBackupModal;
     window.exportBackup = exportBackup;
     window.importBackup = importBackup;
+    window.getCurrentUserData = getCurrentUserData;
     
 })();
 </script>
