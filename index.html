@@ -1569,6 +1569,9 @@
             let requireCaptcha = false;
             let isStackExpanded = false;
             let selectedPrivateChat = null;
+            let regStep = 1;
+            let regData = {};
+            let captchaAnswer = 0;
             const BASE_SALT = "BK_SECURE_SALT_V2_2026";
             const _realStorage = window.localStorage;
 
@@ -2053,6 +2056,53 @@
                 document.body.appendChild(modal);
             }
 
+            function nextRegStep() {
+                const errorEl = document.getElementById('registerError');
+                if (regStep === 1) {
+                    regData.name = document.getElementById('regName').value.trim();
+                    regData.username = document.getElementById('regUsername').value.trim();
+                    regData.password = document.getElementById('regPassword').value;
+                    const confirm = document.getElementById('regConfirm').value;
+                    if (!regData.name || !regData.username || !regData.password || !confirm) {
+                        return showError(errorEl, 'Заполните все поля');
+                    }
+                    if (regData.password !== confirm) {
+                        return showError(errorEl, 'Пароли не совпадают');
+                    }
+                    if (regData.password.length < 6) {
+                        return showError(errorEl, 'Пароль должен быть не менее 6 символов');
+                    }
+                    if (regData.username.length < 3) {
+                        return showError(errorEl, 'Никнейм должен быть не менее 3 символов');
+                    }
+                } else if (regStep === 2) {
+                    regData.email = document.getElementById('regEmail').value.trim();
+                    regData.phone = document.getElementById('regPhone').value.trim();
+                    if (!regData.email && !regData.phone) {
+                        return showError(errorEl, 'Укажите email или телефон');
+                    }
+                }
+                regStep++;
+                const modal = document.querySelector('.modal-form');
+                if (modal) {
+                    renderRegStepInModal(modal);
+                } else {
+                    showRegistrationFormModal();
+                }
+            }
+
+            function prevRegStep() {
+                if (regStep > 1) {
+                    regStep--;
+                    const modal = document.querySelector('.modal-form');
+                    if (modal) {
+                        renderRegStepInModal(modal);
+                    } else {
+                        showRegistrationFormModal();
+                    }
+                }
+            }
+
             function showAccountSwitcherModalContent() {
                 const accounts = Object.keys(savedAccounts).filter(u => u !== currentUser && users[u]);
                 const modal = document.createElement('div');
@@ -2314,19 +2364,22 @@
                         </div>
                     `;
                 });
-                document.getElementById('buy-orders').innerHTML = buyHtml ||
-                    '<p style="color:#888; padding:10px;">Нет заявок</p>';
-                document.getElementById('sell-orders').innerHTML = sellHtml ||
-                    '<p style="color:#888; padding:10px;">Нет заявок</p>';
+                const buyEl = document.getElementById('buy-orders');
+                const sellEl = document.getElementById('sell-orders');
+                if (buyEl) buyEl.innerHTML = buyHtml || '<p style="color:#888; padding:10px;">Нет заявок</p>';
+                if (sellEl) sellEl.innerHTML = sellHtml || '<p style="color:#888; padding:10px;">Нет заявок</p>';
                 const myOrders = [...bktokOrders.buy, ...bktokOrders.sell].filter(o => o.user === currentUser);
-                document.getElementById('my-orders').innerHTML = myOrders.length ?
-                    myOrders.map(o => `
-                        <div style="display:flex; justify-content:space-between; padding:8px; background:rgba(255,215,0,0.05); margin-bottom:5px; border-radius:8px;">
-                            <span>${o.side === 'buy' ? '🟢 Покупка' : '🔴 Продажа'} ${o.amount.toFixed(2)} BK @ ${o.price.toFixed(2)} ₽</span>
-                            <button onclick="cancelOrder('${o.id}')" style="background:transparent; border:none; color:#ff5e5e; cursor:pointer;">✕</button>
-                        </div>
-                    `).join('') :
-                    '<p style="color:#888;">Нет активных ордеров</p>';
+                const myOrdersEl = document.getElementById('my-orders');
+                if (myOrdersEl) {
+                    myOrdersEl.innerHTML = myOrders.length ?
+                        myOrders.map(o => `
+                            <div style="display:flex; justify-content:space-between; padding:8px; background:rgba(255,215,0,0.05); margin-bottom:5px; border-radius:8px;">
+                                <span>${o.side === 'buy' ? '🟢 Покупка' : '🔴 Продажа'} ${o.amount.toFixed(2)} BK @ ${o.price.toFixed(2)} ₽</span>
+                                <button onclick="cancelOrder('${o.id}')" style="background:transparent; border:none; color:#ff5e5e; cursor:pointer;">✕</button>
+                            </div>
+                        `).join('') :
+                        '<p style="color:#888;">Нет активных ордеров</p>';
+                }
             }
 
             function renderTradeHistory() {
@@ -2784,41 +2837,107 @@
             }
 
             function switchToAccount(username) {
-                if (!username || !users[username]) {
-                    showToast('Аккаунт не найден', 'error');
+                if (!username) {
+                    showToast('Аккаунт не указан', 'error');
                     return;
                 }
-                const password = prompt(`Для переключения на аккаунт "${users[username].name}" введите пароль:`);
-                if (!password) return;
-                try {
-                    const tempKey = deriveKey(password, username);
-                    const allUsers = secureGetItemWithKey('bankUsers', tempKey);
-                    if (!allUsers || !allUsers[username]) {
-                        showToast('Неверный пароль!', 'error');
-                        return;
+                
+                // Сначала очищаем модальное окно переключения
+                UI.closeAllModals();
+                
+                // Проверяем, есть ли сохраненный аккаунт
+                if (!users[username]) {
+                    // Пользователя нет в текущем users, пробуем загрузить
+                    const password = prompt(`Для переключения на аккаунт "${username}" введите пароль:`);
+                    if (!password) return;
+                    
+                    try {
+                        const tempKey = deriveKey(password, username);
+                        const allUsers = secureGetItemWithKey('bankUsers', tempKey);
+                        
+                        if (!allUsers || !allUsers[username]) {
+                            showToast('Неверный пароль или аккаунт не найден!', 'error');
+                            return;
+                        }
+                        
+                        const hashedPassword = hashPassword(password);
+                        if (!constantTimeCompare(allUsers[username].passwordHash, hashedPassword)) {
+                            showToast('Неверный пароль!', 'error');
+                            return;
+                        }
+                        
+                        // Сохраняем предыдущего пользователя
+                        if (currentUser) {
+                            savedAccounts[currentUser] = true;
+                        }
+                        
+                        // Обновляем глобальные переменные
+                        MASTER_KEY = tempKey;
+                        users = allUsers;
+                        currentUser = username;
+                        savedAccounts[username] = true;
+                        realSetItem('savedAccounts', JSON.stringify(savedAccounts));
+                        
+                        // Загружаем данные нового пользователя
+                        loadAllDataForCurrentUser();
+                        saveSession();
+                        
+                        // Обновляем интерфейс
+                        updateUIForAuth();
+                        showMainContent();
+                        navigateTo('profile');
+                        showToast(`✅ Переключено на ${users[username].name}`, 'success');
+                        
+                    } catch (error) {
+                        console.error('Ошибка переключения:', error);
+                        showToast('Ошибка переключения аккаунта', 'error');
                     }
-                    const hashedPassword = hashPassword(password);
-                    if (!constantTimeCompare(allUsers[username].passwordHash, hashedPassword)) {
-                        showToast('Неверный пароль!', 'error');
-                        return;
+                } else {
+                    // Пользователь уже в users, но нужна верификация
+                    const password = prompt(`Для переключения на аккаунт "${users[username].name}" введите пароль:`);
+                    if (!password) return;
+                    
+                    try {
+                        const tempKey = deriveKey(password, username);
+                        const allUsers = secureGetItemWithKey('bankUsers', tempKey);
+                        
+                        if (!allUsers || !allUsers[username]) {
+                            showToast('Неверный пароль!', 'error');
+                            return;
+                        }
+                        
+                        const hashedPassword = hashPassword(password);
+                        if (!constantTimeCompare(allUsers[username].passwordHash, hashedPassword)) {
+                            showToast('Неверный пароль!', 'error');
+                            return;
+                        }
+                        
+                        // Сохраняем предыдущего пользователя
+                        if (currentUser) {
+                            savedAccounts[currentUser] = true;
+                        }
+                        
+                        // Обновляем глобальные переменные
+                        MASTER_KEY = tempKey;
+                        users = allUsers;
+                        currentUser = username;
+                        savedAccounts[username] = true;
+                        realSetItem('savedAccounts', JSON.stringify(savedAccounts));
+                        
+                        // Загружаем данные нового пользователя
+                        loadAllDataForCurrentUser();
+                        saveSession();
+                        
+                        // Обновляем интерфейс
+                        updateUIForAuth();
+                        showMainContent();
+                        navigateTo('profile');
+                        showToast(`✅ Переключено на ${users[username].name}`, 'success');
+                        
+                    } catch (error) {
+                        console.error('Ошибка переключения:', error);
+                        showToast('Ошибка переключения аккаунта', 'error');
                     }
-                    if (currentUser) {
-                        savedAccounts[currentUser] = true;
-                    }
-                    MASTER_KEY = tempKey;
-                    users = allUsers;
-                    currentUser = username;
-                    savedAccounts[username] = true;
-                    realSetItem('savedAccounts', JSON.stringify(savedAccounts));
-                    loadAllDataForCurrentUser();
-                    saveSession();
-                    UI.closeAllModals();
-                    updateUIForAuth();
-                    navigateTo('profile');
-                    showToast(`✅ Переключено на ${users[username].name}`, 'success');
-                } catch (error) {
-                    console.error('Ошибка переключения:', error);
-                    showToast('Ошибка переключения аккаунта', 'error');
                 }
             }
 
@@ -2831,7 +2950,22 @@
 
             function addNewAccount() {
                 UI.closeAllModals();
-                openModal('login');
+                
+                // Очищаем текущую сессию перед показом формы входа
+                MASTER_KEY = null;
+                currentUser = null;
+                realRemoveItem('currentSession');
+                realRemoveItem('MASTER_KEY');
+                
+                // Очищаем интерфейс
+                updateUIForAuth();
+                document.querySelector('.main-container').classList.add('hidden');
+                document.querySelector('header').classList.add('hidden');
+                
+                // Показываем форму входа
+                setTimeout(() => {
+                    openModal('login');
+                }, 300);
             }
 
             function saveProfile() {
