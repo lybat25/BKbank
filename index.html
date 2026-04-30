@@ -13,6 +13,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js">
     </script>
     <style>
+        /* ... все стили остаются без изменений ... */
         * {
             margin: 0;
             padding: 0;
@@ -1619,6 +1620,55 @@
                 }).toString();
             }
 
+            function getUserStorageKey(username, dataType) {
+                return `user_${username}_${dataType}`;
+            }
+
+            function saveUserSpecificData(username, dataType, data) {
+                if (!MASTER_KEY) return;
+                try {
+                    const userSpecificSalt = CryptoJS.SHA256(username + dataType + BASE_SALT).toString();
+                    const userKey = CryptoJS.PBKDF2(MASTER_KEY, userSpecificSalt, {
+                        keySize: 256 / 32,
+                        iterations: 10000,
+                        hasher: CryptoJS.algo.SHA256
+                    }).toString();
+                    const jsonData = JSON.stringify(data);
+                    const encrypted = CryptoJS.AES.encrypt(jsonData, userKey).toString();
+                    const hmac = CryptoJS.HmacSHA256(encrypted, userKey).toString();
+                    const storageKey = getUserStorageKey(username, dataType);
+                    realSetItem(storageKey, JSON.stringify({ encrypted, hmac }));
+                } catch (e) {
+                    console.error(`Ошибка сохранения ${dataType} для ${username}:`, e);
+                }
+            }
+
+            function loadUserSpecificData(username, dataType) {
+                if (!MASTER_KEY) return null;
+                const storageKey = getUserStorageKey(username, dataType);
+                const stored = realGetItem(storageKey);
+                if (!stored) return null;
+                try {
+                    const userSpecificSalt = CryptoJS.SHA256(username + dataType + BASE_SALT).toString();
+                    const userKey = CryptoJS.PBKDF2(MASTER_KEY, userSpecificSalt, {
+                        keySize: 256 / 32,
+                        iterations: 10000,
+                        hasher: CryptoJS.algo.SHA256
+                    }).toString();
+                    const { encrypted, hmac } = JSON.parse(stored);
+                    const computedHmac = CryptoJS.HmacSHA256(encrypted, userKey).toString();
+                    if (computedHmac !== hmac) {
+                        console.error(`⚠️ Данные ${dataType} для ${username} повреждены!`);
+                        return null;
+                    }
+                    const decrypted = CryptoJS.AES.decrypt(encrypted, userKey).toString(CryptoJS.enc.Utf8);
+                    return JSON.parse(decrypted);
+                } catch (e) {
+                    console.error(`Ошибка загрузки ${dataType} для ${username}:`, e);
+                    return null;
+                }
+            }
+
             function secureSetItem(key, value) {
                 if (!MASTER_KEY) return;
                 try {
@@ -1672,7 +1722,7 @@
                 if (Math.abs(amount) > 1000000 && operation !== 'rollback') return false;
                 bktokBalances[user] = (bktokBalances[user] || 0) + amount;
                 if (bktokBalances[user] < 0) bktokBalances[user] = 0;
-                if (MASTER_KEY) secureSetItem('bktokBalances', bktokBalances);
+                saveUserSpecificData(user, 'balance', bktokBalances[user]);
                 return true;
             }
 
@@ -1681,14 +1731,14 @@
                 const available = (bktokBalances[user] || 0) - (frozenBalances[user] || 0);
                 if (available < amount) return false;
                 frozenBalances[user] = (frozenBalances[user] || 0) + amount;
-                if (MASTER_KEY) secureSetItem('frozenBalances', frozenBalances);
+                saveUserSpecificData(user, 'frozen', frozenBalances[user]);
                 return true;
             }
 
             function unfreezeBalance(user, amount) {
                 if (!currentUser) return false;
                 frozenBalances[user] = Math.max(0, (frozenBalances[user] || 0) - amount);
-                if (MASTER_KEY) secureSetItem('frozenBalances', frozenBalances);
+                saveUserSpecificData(user, 'frozen', frozenBalances[user]);
                 return true;
             }
 
@@ -1722,6 +1772,8 @@
                         bktokBalances[buy.user] = (bktokBalances[buy.user] || 0) + amount;
                         bktokBalances[sell.user] = (bktokBalances[sell.user] || 0) - amount;
                         bktokBalances[sell.user] = (bktokBalances[sell.user] || 0) + (amount * price - fee);
+                        saveUserSpecificData(buy.user, 'balance', bktokBalances[buy.user]);
+                        saveUserSpecificData(sell.user, 'balance', bktokBalances[sell.user]);
                         trades.push({
                             id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
                             buyer: buy.user,
@@ -1739,13 +1791,9 @@
                 }
                 if (trades.length > 0) {
                     bktokTrades.push(...trades);
-                    if (MASTER_KEY) {
-                        secureSetItem('bktokTrades', bktokTrades);
-                        secureSetItem('bktokBalances', bktokBalances);
-                        secureSetItem('frozenBalances', frozenBalances);
-                    }
-                }
-                if (MASTER_KEY) {
+                    secureSetItem('bktokTrades', bktokTrades);
+                    secureSetItem('bktokOrders', bktokOrders);
+                } else {
                     secureSetItem('bktokOrders', bktokOrders);
                 }
             }
@@ -1839,17 +1887,41 @@
 
             function loadAllDataForCurrentUser() {
                 if (!MASTER_KEY || !currentUser) return;
-                bktokBalances = secureGetItem('bktokBalances') || {};
-                frozenBalances = secureGetItem('frozenBalances') || {};
-                allSupportChats = secureGetItem('allSupportChats') || {};
-                privateChats = secureGetItem('privateChats') || {};
+                bktokBalances[currentUser] = loadUserSpecificData(currentUser, 'balance') || 10;
+                frozenBalances[currentUser] = loadUserSpecificData(currentUser, 'frozen') || 0;
+                allSupportChats[currentUser] = loadUserSpecificData(currentUser, 'supportChats') || [];
+                userTasks[currentUser] = loadUserSpecificData(currentUser, 'tasks') || {};
                 bktokOrders = secureGetItem('bktokOrders') || { buy: [], sell: [] };
                 bktokTrades = secureGetItem('bktokTrades') || [];
-                userTasks = secureGetItem('userTasks') || {};
-                if (bktokBalances[currentUser] === undefined) {
-                    bktokBalances[currentUser] = 10;
-                    secureSetItem('bktokBalances', bktokBalances);
+                privateChats = loadAllPrivateChatsForCurrentUser();
+                if (!allSupportChats[currentUser] || allSupportChats[currentUser].length === 0) {
+                    allSupportChats[currentUser] = [{
+                        from: 'ai',
+                        text: '👋 Здравствуйте! Я нейросеть BK-Bank. Могу помочь с балансом, картами, токенами.',
+                        time: new Date().toISOString()
+                    }];
+                    saveUserSpecificData(currentUser, 'supportChats', allSupportChats[currentUser]);
                 }
+                if (bktokBalances[currentUser] === undefined || bktokBalances[currentUser] === null) {
+                    bktokBalances[currentUser] = 10;
+                    saveUserSpecificData(currentUser, 'balance', 10);
+                }
+            }
+
+            function loadAllPrivateChatsForCurrentUser() {
+                if (!currentUser) return {};
+                const allChats = {};
+                for (let i = 0; i < _realStorage.length; i++) {
+                    const key = _realStorage.key(i);
+                    if (key && key.startsWith('chat_') && key.includes(currentUser)) {
+                        const chatData = loadUserSpecificData(currentUser, key);
+                        if (chatData) {
+                            const chatId = key.replace('chat_', '');
+                            allChats[chatId] = chatData;
+                        }
+                    }
+                }
+                return allChats;
             }
 
             function saveSession() {
@@ -2441,7 +2513,7 @@
                     created: Date.now()
                 };
                 bktokOrders[side].push(order);
-                if (MASTER_KEY) secureSetItem('bktokOrders', bktokOrders);
+                secureSetItem('bktokOrders', bktokOrders);
                 matchOrders();
                 loadBKtok();
             }
@@ -2461,7 +2533,7 @@
                 }
                 bktokOrders.buy = bktokOrders.buy.filter(o => o.id != id);
                 bktokOrders.sell = bktokOrders.sell.filter(o => o.id != id);
-                if (MASTER_KEY) secureSetItem('bktokOrders', bktokOrders);
+                secureSetItem('bktokOrders', bktokOrders);
                 loadBKtok();
                 showToast('✅ Ордер отменен, средства разморожены', 'success');
             }
@@ -2500,7 +2572,7 @@
                 }
                 updateBalance(currentUser, task.reward, 'task');
                 userTasks[currentUser][taskId] = Date.now();
-                if (MASTER_KEY) secureSetItem('userTasks', userTasks);
+                saveUserSpecificData(currentUser, 'tasks', userTasks[currentUser]);
                 renderTasks();
                 showToast(`+${task.reward} BK!`, 'success');
             }
@@ -2579,7 +2651,7 @@
                     text: text,
                     time: new Date().toISOString()
                 });
-                if (MASTER_KEY) secureSetItem('allSupportChats', allSupportChats);
+                saveUserSpecificData(currentUser, 'supportChats', allSupportChats[currentUser]);
                 input.value = '';
                 loadAIMessages();
                 setTimeout(() => {
@@ -2594,14 +2666,14 @@
                         text: response,
                         time: new Date().toISOString()
                     });
-                    if (MASTER_KEY) secureSetItem('allSupportChats', allSupportChats);
+                    saveUserSpecificData(currentUser, 'supportChats', allSupportChats[currentUser]);
                     loadAIMessages();
                 }, 800);
             }
 
             function renderPrivateChats() {
                 const container = document.getElementById('chats-container');
-                const myChats = Object.keys(privateChats).filter(id => id.includes(currentUser));
+                const myChats = Object.keys(privateChats);
                 let html = `
                     <div class="support-panel">
                         <div class="users-list">
@@ -2657,7 +2729,8 @@
                 }
                 const chatId = [currentUser, username].sort().join('-');
                 if (!privateChats[chatId]) privateChats[chatId] = [];
-                if (MASTER_KEY) secureSetItem('privateChats', privateChats);
+                const chatKey = 'chat_' + chatId;
+                saveUserSpecificData(currentUser, chatKey, privateChats[chatId]);
                 selectedPrivateChat = chatId;
                 renderPrivateChats();
             }
@@ -2679,7 +2752,8 @@
                     text: text,
                     time: new Date().toISOString()
                 });
-                if (MASTER_KEY) secureSetItem('privateChats', privateChats);
+                const chatKey = 'chat_' + selectedPrivateChat;
+                saveUserSpecificData(currentUser, chatKey, privateChats[selectedPrivateChat]);
                 input.value = '';
                 loadPrivateChatMessages();
             }
@@ -2720,7 +2794,7 @@
             function getCurrentUserData() {
                 return users[currentUser];
             }
-            // ===== ИСПРАВЛЕННЫЕ ФУНКЦИИ =====
+
             function destroyAccount() {
                 if (!currentUser) return;
                 if (confirm(
@@ -2740,15 +2814,21 @@
                     });
                     bktokOrders.buy = bktokOrders.buy.filter(o => o.user !== deletedUser);
                     bktokOrders.sell = bktokOrders.sell.filter(o => o.user !== deletedUser);
-                    if (MASTER_KEY) {
-                        secureSetItem('bankUsers', users);
-                        secureSetItem('bktokBalances', bktokBalances);
-                        secureSetItem('frozenBalances', frozenBalances);
-                        secureSetItem('userTasks', userTasks);
-                        secureSetItem('allSupportChats', allSupportChats);
-                        secureSetItem('privateChats', privateChats);
-                        secureSetItem('bktokOrders', bktokOrders);
+                    const storageKeysToRemove = [
+                        getUserStorageKey(deletedUser, 'balance'),
+                        getUserStorageKey(deletedUser, 'frozen'),
+                        getUserStorageKey(deletedUser, 'tasks'),
+                        getUserStorageKey(deletedUser, 'supportChats')
+                    ];
+                    storageKeysToRemove.forEach(key => realRemoveItem(key));
+                    for (let i = _realStorage.length - 1; i >= 0; i--) {
+                        const key = _realStorage.key(i);
+                        if (key && key.startsWith('chat_') && key.includes(deletedUser)) {
+                            realRemoveItem(key);
+                        }
                     }
+                    secureSetItem('bankUsers', users);
+                    secureSetItem('bktokOrders', bktokOrders);
                     realSetItem('savedAccounts', JSON.stringify(savedAccounts));
                     MASTER_KEY = null;
                     currentUser = null;
@@ -2841,103 +2921,38 @@
                     showToast('Аккаунт не указан', 'error');
                     return;
                 }
-                
-                // Сначала очищаем модальное окно переключения
                 UI.closeAllModals();
-                
-                // Проверяем, есть ли сохраненный аккаунт
-                if (!users[username]) {
-                    // Пользователя нет в текущем users, пробуем загрузить
-                    const password = prompt(`Для переключения на аккаунт "${username}" введите пароль:`);
-                    if (!password) return;
-                    
-                    try {
-                        const tempKey = deriveKey(password, username);
-                        const allUsers = secureGetItemWithKey('bankUsers', tempKey);
-                        
-                        if (!allUsers || !allUsers[username]) {
-                            showToast('Неверный пароль или аккаунт не найден!', 'error');
-                            return;
-                        }
-                        
-                        const hashedPassword = hashPassword(password);
-                        if (!constantTimeCompare(allUsers[username].passwordHash, hashedPassword)) {
-                            showToast('Неверный пароль!', 'error');
-                            return;
-                        }
-                        
-                        // Сохраняем предыдущего пользователя
-                        if (currentUser) {
-                            savedAccounts[currentUser] = true;
-                        }
-                        
-                        // Обновляем глобальные переменные
-                        MASTER_KEY = tempKey;
-                        users = allUsers;
-                        currentUser = username;
-                        savedAccounts[username] = true;
-                        realSetItem('savedAccounts', JSON.stringify(savedAccounts));
-                        
-                        // Загружаем данные нового пользователя
-                        loadAllDataForCurrentUser();
-                        saveSession();
-                        
-                        // Обновляем интерфейс
-                        updateUIForAuth();
-                        showMainContent();
-                        navigateTo('profile');
-                        showToast(`✅ Переключено на ${users[username].name}`, 'success');
-                        
-                    } catch (error) {
-                        console.error('Ошибка переключения:', error);
-                        showToast('Ошибка переключения аккаунта', 'error');
+                const password = prompt(`Для переключения на аккаунт "${username}" введите пароль:`);
+                if (!password) return;
+                try {
+                    const tempKey = deriveKey(password, username);
+                    const allUsers = secureGetItemWithKey('bankUsers', tempKey);
+                    if (!allUsers || !allUsers[username]) {
+                        showToast('Неверный пароль или аккаунт не найден!', 'error');
+                        return;
                     }
-                } else {
-                    // Пользователь уже в users, но нужна верификация
-                    const password = prompt(`Для переключения на аккаунт "${users[username].name}" введите пароль:`);
-                    if (!password) return;
-                    
-                    try {
-                        const tempKey = deriveKey(password, username);
-                        const allUsers = secureGetItemWithKey('bankUsers', tempKey);
-                        
-                        if (!allUsers || !allUsers[username]) {
-                            showToast('Неверный пароль!', 'error');
-                            return;
-                        }
-                        
-                        const hashedPassword = hashPassword(password);
-                        if (!constantTimeCompare(allUsers[username].passwordHash, hashedPassword)) {
-                            showToast('Неверный пароль!', 'error');
-                            return;
-                        }
-                        
-                        // Сохраняем предыдущего пользователя
-                        if (currentUser) {
-                            savedAccounts[currentUser] = true;
-                        }
-                        
-                        // Обновляем глобальные переменные
-                        MASTER_KEY = tempKey;
-                        users = allUsers;
-                        currentUser = username;
-                        savedAccounts[username] = true;
-                        realSetItem('savedAccounts', JSON.stringify(savedAccounts));
-                        
-                        // Загружаем данные нового пользователя
-                        loadAllDataForCurrentUser();
-                        saveSession();
-                        
-                        // Обновляем интерфейс
-                        updateUIForAuth();
-                        showMainContent();
-                        navigateTo('profile');
-                        showToast(`✅ Переключено на ${users[username].name}`, 'success');
-                        
-                    } catch (error) {
-                        console.error('Ошибка переключения:', error);
-                        showToast('Ошибка переключения аккаунта', 'error');
+                    const hashedPassword = hashPassword(password);
+                    if (!constantTimeCompare(allUsers[username].passwordHash, hashedPassword)) {
+                        showToast('Неверный пароль!', 'error');
+                        return;
                     }
+                    if (currentUser) {
+                        savedAccounts[currentUser] = true;
+                    }
+                    MASTER_KEY = tempKey;
+                    users = allUsers;
+                    currentUser = username;
+                    savedAccounts[username] = true;
+                    realSetItem('savedAccounts', JSON.stringify(savedAccounts));
+                    loadAllDataForCurrentUser();
+                    saveSession();
+                    updateUIForAuth();
+                    showMainContent();
+                    navigateTo('profile');
+                    showToast(`✅ Переключено на ${users[username].name}`, 'success');
+                } catch (error) {
+                    console.error('Ошибка переключения:', error);
+                    showToast('Ошибка переключения аккаунта', 'error');
                 }
             }
 
@@ -2950,19 +2965,13 @@
 
             function addNewAccount() {
                 UI.closeAllModals();
-                
-                // Очищаем текущую сессию перед показом формы входа
                 MASTER_KEY = null;
                 currentUser = null;
                 realRemoveItem('currentSession');
                 realRemoveItem('MASTER_KEY');
-                
-                // Очищаем интерфейс
                 updateUIForAuth();
                 document.querySelector('.main-container').classList.add('hidden');
                 document.querySelector('header').classList.add('hidden');
-                
-                // Показываем форму входа
                 setTimeout(() => {
                     openModal('login');
                 }, 300);
@@ -2977,7 +2986,7 @@
                 if (email) users[currentUser].email = email;
                 if (phone && /^\+7\d{10}$/.test(phone)) users[currentUser].phone = phone;
                 if (pass && pass.length >= 6) users[currentUser].passwordHash = hashPassword(pass);
-                if (MASTER_KEY) secureSetItem('bankUsers', users);
+                secureSetItem('bankUsers', users);
                 UI.closeAllModals();
                 navigateTo('profile');
                 showToast('Профиль обновлён!', 'success');
@@ -2989,7 +2998,7 @@
                     const reader = new FileReader();
                     reader.onload = (ev) => {
                         users[currentUser].avatar = ev.target.result;
-                        if (MASTER_KEY) secureSetItem('bankUsers', users);
+                        secureSetItem('bankUsers', users);
                         navigateTo('profile');
                         updateUIForAuth();
                     };
@@ -3000,7 +3009,7 @@
             function exportBackup() {
                 if (!currentUser) return;
                 const backup = {
-                    version: '1.0',
+                    version: '2.0',
                     username: currentUser,
                     timestamp: new Date().toISOString(),
                     data: {
@@ -3045,13 +3054,11 @@
                         frozenBalances[currentUser] = backup.data.frozen || 0;
                         userTasks[currentUser] = backup.data.tasks || {};
                         allSupportChats[currentUser] = backup.data.supportChats || [];
-                        if (MASTER_KEY) {
-                            secureSetItem('bankUsers', users);
-                            secureSetItem('bktokBalances', bktokBalances);
-                            secureSetItem('frozenBalances', frozenBalances);
-                            secureSetItem('userTasks', userTasks);
-                            secureSetItem('allSupportChats', allSupportChats);
-                        }
+                        saveUserSpecificData(currentUser, 'balance', bktokBalances[currentUser]);
+                        saveUserSpecificData(currentUser, 'frozen', frozenBalances[currentUser]);
+                        saveUserSpecificData(currentUser, 'tasks', userTasks[currentUser]);
+                        saveUserSpecificData(currentUser, 'supportChats', allSupportChats[currentUser]);
+                        secureSetItem('bankUsers', users);
                         showToast('✅ Данные успешно импортированы!', 'success');
                         closeModalAndGoToProfile();
                     } catch (error) {
@@ -3093,15 +3100,20 @@
                 };
                 secureSetItem('bankUsers', users);
                 currentUser = username;
-                bktokBalances = secureGetItem('bktokBalances') || {};
-                frozenBalances = secureGetItem('frozenBalances') || {};
                 bktokBalances[username] = 10;
-                secureSetItem('bktokBalances', bktokBalances);
-                allSupportChats = {};
-                privateChats = {};
+                frozenBalances[username] = 0;
+                saveUserSpecificData(username, 'balance', 10);
+                saveUserSpecificData(username, 'frozen', 0);
+                allSupportChats[username] = [{
+                    from: 'ai',
+                    text: '👋 Здравствуйте! Я нейросеть BK-Bank. Могу помочь с балансом, картами, токенами.',
+                    time: new Date().toISOString()
+                }];
+                saveUserSpecificData(username, 'supportChats', allSupportChats[username]);
+                userTasks[username] = {};
+                saveUserSpecificData(username, 'tasks', {});
                 bktokOrders = { buy: [], sell: [] };
                 bktokTrades = [];
-                userTasks = {};
                 savedAccounts[username] = true;
                 realSetItem('savedAccounts', JSON.stringify(savedAccounts));
                 saveSession();
@@ -3116,7 +3128,7 @@
                 UI.closeAllModals();
                 if (currentUser) {
                     users[currentUser].isLoggedIn = false;
-                    if (MASTER_KEY) secureSetItem('bankUsers', users);
+                    secureSetItem('bankUsers', users);
                 }
                 MASTER_KEY = null;
                 currentUser = null;
@@ -3147,13 +3159,7 @@
                         if (decryptedUsers && decryptedUsers[sessionData.username]) {
                             users = decryptedUsers;
                             currentUser = sessionData.username;
-                            bktokBalances = secureGetItem('bktokBalances') || {};
-                            frozenBalances = secureGetItem('frozenBalances') || {};
-                            allSupportChats = secureGetItem('allSupportChats') || {};
-                            privateChats = secureGetItem('privateChats') || {};
-                            bktokOrders = secureGetItem('bktokOrders') || { buy: [], sell: [] };
-                            bktokTrades = secureGetItem('bktokTrades') || [];
-                            userTasks = secureGetItem('userTasks') || {};
+                            loadAllDataForCurrentUser();
                             showMainContent();
                             updateUIForAuth();
                             return;
@@ -3168,7 +3174,6 @@
                 updateUIForAuth();
                 navigateTo('about');
             };
-            // Глобальные функции
             window.toggleTheme = toggleTheme;
             window.navigateTo = navigateTo;
             window.openModal = openModal;
