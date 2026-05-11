@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -13,7 +14,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js">
     </script>
     <style>
-        /* ... все стили остаются без изменений ... */
         * {
             margin: 0;
             padding: 0;
@@ -64,8 +64,38 @@
         body.light-theme div {
             color: #0a0a0a;
         }
-        body.light-theme strong {
-            color: #000;
+        body.light-theme .token-balance,
+        body.light-theme .highlight,
+        body.light-theme .service-title,
+        body.light-theme .service-badge,
+        body.light-theme h3,
+        body.light-theme h4,
+        body.light-theme .saved-account-name,
+        body.light-theme .chart-stat-value,
+        body.light-theme .chart-bar-value,
+        body.light-theme .case-item h4,
+        body.light-theme .task-item strong,
+        body.light-theme .text-link {
+            color: inherit;
+        }
+        body.light-theme .error-text {
+            color: #ff5e5e !important;
+        }
+        body.light-theme .chart-stat-value.positive {
+            color: #4ade80 !important;
+        }
+        body.light-theme .chart-stat-value.negative {
+            color: #ff5e5e !important;
+        }
+        body.light-theme .token-balance {
+            color: #FFD700 !important;
+        }
+        body.light-theme .highlight {
+            color: #FFD700 !important;
+        }
+        body.light-theme .service-badge {
+            background: #FFD700 !important;
+            color: #0a0a0a !important;
         }
         body.light-theme .form-input {
             background: rgba(0, 0, 0, 0.05);
@@ -1573,6 +1603,8 @@
             let regStep = 1;
             let regData = {};
             let captchaAnswer = 0;
+            let inactivityTimer = null;
+            const INACTIVITY_TIMEOUT = 30 * 60 * 1000;
             const BASE_SALT = "BK_SECURE_SALT_V2_2026";
             const _realStorage = window.localStorage;
 
@@ -1583,7 +1615,7 @@
             function realRemoveItem(key) { _realStorage.removeItem(key); }
 
             function loadUnencryptedData() {
-                failedAttempts = parseInt(realGetItem('failedAttempts') || '0');
+                failedAttempts = parseInt(sessionStorage.getItem('failedAttempts') || realGetItem('failedAttempts') || '0');
                 savedAccounts = JSON.parse(realGetItem('savedAccounts') || '{}');
             }
 
@@ -1601,6 +1633,11 @@
                     result |= a.charCodeAt(i) ^ b.charCodeAt(i);
                 }
                 return result === 0;
+            }
+
+            function isValidNickname(nickname) {
+                const regex = /^[a-zA-Z0-9_]+$/;
+                return regex.test(nickname) && nickname.length >= 3;
             }
 
             function getUserSalt(username) {
@@ -1716,6 +1753,24 @@
                 }
             }
 
+            function resetInactivityTimer() {
+                if (inactivityTimer) clearTimeout(inactivityTimer);
+                if (currentUser && MASTER_KEY) {
+                    inactivityTimer = setTimeout(() => {
+                        showToast('⏳ Сессия завершена из-за бездействия', 'warning');
+                        logout();
+                    }, INACTIVITY_TIMEOUT);
+                }
+            }
+
+            function updateThemeIcon() {
+                const themeBtn = document.querySelector('.theme-toggle');
+                if (themeBtn) {
+                    const isLight = document.body.classList.contains('light-theme');
+                    themeBtn.textContent = isLight ? '☀️ Тема' : '🌙 Тема';
+                }
+            }
+
             function updateBalance(user, amount, operation) {
                 if (!currentUser) return false;
                 if (user !== currentUser && operation !== 'admin_mint' && operation !== 'rollback') return false;
@@ -1805,7 +1860,7 @@
                     position: fixed;
                     top: 80px;
                     right: 20px;
-                    background: ${type === 'success' ? '#2ecc71' : type === 'error' ? '#e74c3c' : '#FFD700'};
+                    background: ${type === 'success' ? '#2ecc71' : type === 'error' ? '#e74c3c' : type === 'warning' ? '#f39c12' : '#FFD700'};
                     color: ${type === 'info' ? '#0a0a0a' : 'white'};
                     padding: 15px 20px;
                     border-radius: 40px;
@@ -1833,7 +1888,8 @@
                 document.querySelector('.main-container').classList.remove('hidden');
                 document.querySelector('header').classList.remove('hidden');
                 updateHowToStartVisibility();
-                navigateTo('about');
+                updateUIForAuth();
+                resetInactivityTimer();
             }
 
             function showWelcomeMessage(name) {
@@ -1859,12 +1915,14 @@
                 const authBtns = document.getElementById('auth-buttons');
                 const profileBtn = document.getElementById('profile-btn-header');
                 if (currentUser) {
-                    authBtns.classList.add('hidden');
-                    profileBtn.classList.remove('hidden');
+                    if (authBtns) authBtns.classList.add('hidden');
+                    if (profileBtn) profileBtn.classList.remove('hidden');
                     const user = users[currentUser];
-                    document.getElementById('header-username').textContent = user.name || currentUser;
+                    const headerUsername = document.getElementById('header-username');
+                    if (headerUsername) headerUsername.textContent = user.name || currentUser;
                     if (user.avatar) {
-                        document.getElementById('header-avatar').src = user.avatar;
+                        const headerAvatar = document.getElementById('header-avatar');
+                        if (headerAvatar) headerAvatar.src = user.avatar;
                     }
                     ['bktok', 'tasks', 'cases', 'chats'].forEach(section => {
                         const guestMsg = document.getElementById(section + '-guest-message');
@@ -1873,8 +1931,8 @@
                         if (content) content.classList.remove('hidden');
                     });
                 } else {
-                    authBtns.classList.remove('hidden');
-                    profileBtn.classList.add('hidden');
+                    if (authBtns) authBtns.classList.remove('hidden');
+                    if (profileBtn) profileBtn.classList.add('hidden');
                     ['bktok', 'tasks', 'cases', 'chats'].forEach(section => {
                         const guestMsg = document.getElementById(section + '-guest-message');
                         const content = document.getElementById(section + '-content');
@@ -1883,6 +1941,30 @@
                     });
                 }
                 updateHowToStartVisibility();
+                resetInactivityTimer();
+            }
+
+            function resetToGuestState() {
+                UI.clearAllIntervals();
+                UI.closeAllModals();
+                MASTER_KEY = null;
+                currentUser = null;
+                frozenBalances = {};
+                bktokOrders = { buy: [], sell: [] };
+                bktokTrades = [];
+                allSupportChats = {};
+                privateChats = {};
+                userTasks = {};
+                realRemoveItem('currentSession');
+                if (inactivityTimer) {
+                    clearTimeout(inactivityTimer);
+                    inactivityTimer = null;
+                }
+                document.querySelector('.main-container').classList.remove('hidden');
+                document.querySelector('header').classList.remove('hidden');
+                updateUIForAuth();
+                updateThemeIcon();
+                navigateTo('about');
             }
 
             function loadAllDataForCurrentUser() {
@@ -1931,7 +2013,6 @@
                         timestamp: Date.now()
                     };
                     realSetItem('currentSession', JSON.stringify(sessionData));
-                    realSetItem('MASTER_KEY', MASTER_KEY);
                 }
             }
 
@@ -1948,47 +2029,51 @@
                     return;
                 }
                 UI.clearAllIntervals();
-                ['about', 'services', 'cards', 'bktok', 'tasks', 'cases', 'support', 'chats', 'profile'].forEach(id => {
-                    const el = document.getElementById(id + '-section');
-                    if (el) el.classList.add('hidden');
-                });
+                document.querySelectorAll('.content-card').forEach(el => el.classList.add('hidden'));
                 UI.setActiveSection(section);
+                const sectionMap = {
+                    'about': 'about-section',
+                    'services': 'services-section',
+                    'cards': 'cards-section',
+                    'bktok': 'bktok-section',
+                    'tasks': 'tasks-section',
+                    'cases': 'cases-section',
+                    'support': 'support-section',
+                    'chats': 'chats-section',
+                    'profile': 'profile-section'
+                };
+                const targetId = sectionMap[section];
+                if (targetId) {
+                    const targetEl = document.getElementById(targetId);
+                    if (targetEl) targetEl.classList.remove('hidden');
+                }
                 const sectionHandlers = {
                     'about': () => {
-                        document.getElementById('about-section')?.classList.remove('hidden');
                         updateHowToStartVisibility();
                     },
-                    'services': () => document.getElementById('services-section')?.classList.remove('hidden'),
                     'cards': () => {
-                        document.getElementById('cards-section')?.classList.remove('hidden');
                         renderCardsStack();
                     },
                     'bktok': () => {
-                        document.getElementById('bktok-section')?.classList.remove('hidden');
                         if (currentUser) {
                             loadBKtok();
                             startChartUpdates();
                         }
                     },
                     'tasks': () => {
-                        document.getElementById('tasks-section')?.classList.remove('hidden');
                         if (currentUser) renderTasks();
                     },
                     'cases': () => {
-                        document.getElementById('cases-section')?.classList.remove('hidden');
                         if (currentUser) renderCases();
                     },
                     'support': () => {
-                        document.getElementById('support-section')?.classList.remove('hidden');
                         renderAISupport();
                     },
                     'chats': () => {
-                        document.getElementById('chats-section')?.classList.remove('hidden');
                         if (currentUser) renderPrivateChats();
                     },
                     'profile': () => {
                         if (currentUser) {
-                            document.getElementById('profile-section')?.classList.remove('hidden');
                             showProfile();
                         } else {
                             openModal('login');
@@ -2001,6 +2086,7 @@
                 setTimeout(() => {
                     UI.isNavigating = false;
                 }, 100);
+                resetInactivityTimer();
             }
 
             function openModal(type, data = {}) {
@@ -2043,7 +2129,8 @@
                     <div class="form-title">🔐 Вход в BK-Bank</div>
                     <div id="loginError" class="error-text hidden"></div>
                     <input id="loginUsername" class="form-input" placeholder="👤 Никнейм или телефон">
-                    <input type="password" id="loginPassword" class="form-input" placeholder="🔑 Пароль">
+                    <input type="password" id="loginPassword" class="form-input" placeholder="🔑 Пароль (учтите регистр)">
+                    <div id="capslock-warning" class="error-text hidden" style="color:#f39c12;">⚠️ CapsLock включен</div>
                 `;
                 if (requireCaptcha) {
                     const ops = ['+', '-', '×'];
@@ -2071,6 +2158,96 @@
                 `;
                 modal.innerHTML = html;
                 document.body.appendChild(modal);
+                const passwordInput = document.getElementById('loginPassword');
+                if (passwordInput) {
+                    passwordInput.addEventListener('keyup', function(event) {
+                        const warning = document.getElementById('capslock-warning');
+                        if (warning) {
+                            if (event.getModifierState('CapsLock')) {
+                                warning.classList.remove('hidden');
+                            } else {
+                                warning.classList.add('hidden');
+                            }
+                        }
+                    });
+                }
+            }
+
+            function showSessionResumeModal(username) {
+                UI.closeAllModals();
+                const overlay = document.createElement('div');
+                overlay.className = 'modal-overlay';
+                overlay.id = 'modal-overlay';
+                overlay.addEventListener('click', () => {
+                    UI.closeAllModals();
+                    if (currentUser) {
+                        navigateTo('about');
+                    }
+                });
+                document.body.appendChild(overlay);
+                const modal = document.createElement('div');
+                modal.className = 'modal-form';
+                modal.addEventListener('click', (e) => e.stopPropagation());
+                modal.innerHTML = `
+                    <div class="form-title">🔐 Возобновление сессии</div>
+                    <div style="text-align:center; margin-bottom: 20px;">
+                        <p style="color:#FFD700;">👤 ${escapeHtml(username)}</p>
+                        <p style="font-size:0.9rem; opacity:0.8;">Введите пароль для входа</p>
+                    </div>
+                    <div id="sessionError" class="error-text hidden"></div>
+                    <input type="password" id="sessionPassword" class="form-input" placeholder="🔑 Пароль">
+                    <button class="gold-button" onclick="window.resumeSession('${username}')">🚪 Войти</button>
+                    <button class="dark-button" onclick="window.clearSessionAndShowLogin()">↩ Другой аккаунт</button>
+                `;
+                document.body.appendChild(modal);
+            }
+
+            async function resumeSession(username) {
+                const passwordInput = document.getElementById('sessionPassword');
+                const errorEl = document.getElementById('sessionError');
+                if (!passwordInput) return;
+                const password = passwordInput.value;
+                if (!password) {
+                    return showError(errorEl, 'Введите пароль');
+                }
+                try {
+                    const tempKey = deriveKey(password, username);
+                    const decryptedUsers = secureGetItemWithKey('bankUsers', tempKey);
+                    if (!decryptedUsers || !decryptedUsers[username]) {
+                        return showError(errorEl, 'Неверный пароль');
+                    }
+                    const hashedPassword = hashPassword(password);
+                    if (!constantTimeCompare(decryptedUsers[username].passwordHash, hashedPassword)) {
+                        return showError(errorEl, 'Неверный пароль');
+                    }
+                    MASTER_KEY = tempKey;
+                    users = decryptedUsers;
+                    currentUser = username;
+                    savedAccounts[username] = true;
+                    realSetItem('savedAccounts', JSON.stringify(savedAccounts));
+                    loadAllDataForCurrentUser();
+                    saveSession();
+                    UI.closeAllModals();
+                    showMainContent();
+                    showWelcomeMessage(users[username].name);
+                    navigateTo('about');
+                    resetInactivityTimer();
+                } catch (error) {
+                    console.error('Ошибка возобновления сессии:', error);
+                    return showError(errorEl, 'Ошибка входа. Попробуйте снова.');
+                }
+            }
+
+            function clearSessionAndShowLogin() {
+                MASTER_KEY = null;
+                currentUser = null;
+                realRemoveItem('currentSession');
+                UI.closeAllModals();
+                document.querySelector('.main-container').classList.remove('hidden');
+                document.querySelector('header').classList.remove('hidden');
+                updateUIForAuth();
+                updateThemeIcon();
+                openModal('login');
             }
 
             function showRegistrationFormModal() {
@@ -2095,7 +2272,7 @@
                 if (regStep === 1) {
                     html += `
                         <input id="regName" class="form-input" placeholder="👤 Ваше имя" value="${escapeHtml(regData.name || '')}">
-                        <input id="regUsername" class="form-input" placeholder="📛 Никнейм" value="${escapeHtml(regData.username || '')}">
+                        <input id="regUsername" class="form-input" placeholder="📛 Никнейм (только буквы, цифры и _)" value="${escapeHtml(regData.username || '')}">
                         <input type="password" id="regPassword" class="form-input" placeholder="🔒 Пароль">
                         <input type="password" id="regConfirm" class="form-input" placeholder="🔒 Подтвердите пароль">
                         <button class="gold-button" onclick="window.nextRegStep()">Далее →</button>
@@ -2138,14 +2315,14 @@
                     if (!regData.name || !regData.username || !regData.password || !confirm) {
                         return showError(errorEl, 'Заполните все поля');
                     }
+                    if (!isValidNickname(regData.username)) {
+                        return showError(errorEl, 'Никнейм может содержать только буквы, цифры и _ (мин. 3 символа)');
+                    }
                     if (regData.password !== confirm) {
                         return showError(errorEl, 'Пароли не совпадают');
                     }
                     if (regData.password.length < 6) {
                         return showError(errorEl, 'Пароль должен быть не менее 6 символов');
-                    }
-                    if (regData.username.length < 3) {
-                        return showError(errorEl, 'Никнейм должен быть не менее 3 символов');
                     }
                 } else if (regStep === 2) {
                     regData.email = document.getElementById('regEmail').value.trim();
@@ -2267,6 +2444,7 @@
             function toggleTheme() {
                 document.body.classList.toggle('light-theme');
                 realSetItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
+                updateThemeIcon();
             }
             const cardList = [
                 { img: 'png/2025-01-30_15-13-31-Photoroom.png' },
@@ -2774,7 +2952,7 @@
                         </div>
                         <div style="display:flex; gap:8px; margin-left:auto;">
                             <button style="background:transparent; border:1.5px solid #FFD700; color:#FFD700; padding:10px 20px; border-radius:30px; cursor:pointer; font-weight:600;" onclick="window.openModal('accountSwitcher')">🔄 Сменить</button>
-                            <button style="background:transparent; border:1.5px solid #FFD700; color:#FFD700; padding:10px 20px; border-radius:30px; cursor:pointer; font-weight:600;" onclick="logout()">🚪 Выйти</button>
+                            <button id="header-logout-btn" style="background:transparent; border:1.5px solid #FFD700; color:#FFD700; padding:10px 20px; border-radius:30px; cursor:pointer; font-weight:600;" onclick="logout()">🚪 Выйти</button>
                         </div>
                     </div>
                     <div class="profile-actions">
@@ -2833,15 +3011,13 @@
                     MASTER_KEY = null;
                     currentUser = null;
                     realRemoveItem('currentSession');
-                    realRemoveItem('MASTER_KEY');
                     UI.closeAllModals();
                     updateUIForAuth();
-                    document.querySelector('.main-container').classList.add('hidden');
-                    document.querySelector('header').classList.add('hidden');
-                    setTimeout(() => {
-                        openModal('login');
-                        showToast('✅ Аккаунт полностью удален!', 'success');
-                    }, 500);
+                    updateThemeIcon();
+                    document.querySelector('.main-container').classList.remove('hidden');
+                    document.querySelector('header').classList.remove('hidden');
+                    navigateTo('about');
+                    showToast('✅ Аккаунт полностью удален!', 'success');
                 }
             }
             async function login() {
@@ -2863,6 +3039,7 @@
                         }
                         if (parseInt(captcha) !== loginCaptchaAnswer) {
                             failedAttempts++;
+                            sessionStorage.setItem('failedAttempts', failedAttempts);
                             realSetItem('failedAttempts', failedAttempts);
                             openModal('login');
                             return showError(errorEl, 'Неверная капча');
@@ -2874,6 +3051,7 @@
                     const decryptedUsers = secureGetItemWithKey('bankUsers', tempKey);
                     if (!decryptedUsers) {
                         failedAttempts++;
+                        sessionStorage.setItem('failedAttempts', failedAttempts);
                         realSetItem('failedAttempts', failedAttempts);
                         return showError(errorEl, 'Неверный логин или пароль');
                     }
@@ -2885,16 +3063,19 @@
                     }
                     if (!foundUser) {
                         failedAttempts++;
+                        sessionStorage.setItem('failedAttempts', failedAttempts);
                         realSetItem('failedAttempts', failedAttempts);
                         return showError(errorEl, 'Пользователь не найден');
                     }
                     const hashedPassword = hashPassword(password);
                     if (!constantTimeCompare(decryptedUsers[foundUser].passwordHash, hashedPassword)) {
                         failedAttempts++;
+                        sessionStorage.setItem('failedAttempts', failedAttempts);
                         realSetItem('failedAttempts', failedAttempts);
                         return showError(errorEl, 'Неверный пароль');
                     }
                     failedAttempts = 0;
+                    sessionStorage.removeItem('failedAttempts');
                     realSetItem('failedAttempts', '0');
                     MASTER_KEY = tempKey;
                     users = decryptedUsers;
@@ -2906,11 +3087,12 @@
                     UI.closeAllModals();
                     showMainContent();
                     showWelcomeMessage(users[foundUser].name);
-                    updateUIForAuth();
                     navigateTo('about');
+                    resetInactivityTimer();
                 } catch (error) {
                     console.error('Ошибка входа:', error);
                     failedAttempts++;
+                    sessionStorage.setItem('failedAttempts', failedAttempts);
                     realSetItem('failedAttempts', failedAttempts);
                     return showError(errorEl, 'Ошибка входа. Попробуйте снова.');
                 }
@@ -2950,6 +3132,7 @@
                     showMainContent();
                     navigateTo('profile');
                     showToast(`✅ Переключено на ${users[username].name}`, 'success');
+                    resetInactivityTimer();
                 } catch (error) {
                     console.error('Ошибка переключения:', error);
                     showToast('Ошибка переключения аккаунта', 'error');
@@ -2968,8 +3151,8 @@
                 MASTER_KEY = null;
                 currentUser = null;
                 realRemoveItem('currentSession');
-                realRemoveItem('MASTER_KEY');
                 updateUIForAuth();
+                updateThemeIcon();
                 document.querySelector('.main-container').classList.add('hidden');
                 document.querySelector('header').classList.add('hidden');
                 setTimeout(() => {
@@ -3041,6 +3224,9 @@
                         if (!backup.data || !backup.data.user) {
                             throw new Error('Неверный формат файла');
                         }
+                        if (!users[currentUser]) {
+                            throw new Error('Текущий пользователь не найден в системе');
+                        }
                         if (backup.username !== currentUser) {
                             if (!confirm(
                                     `Файл от пользователя ${backup.username}. Импортировать в текущий аккаунт ${currentUser}?`
@@ -3077,6 +3263,9 @@
                     return showError(errorEl, 'Неверный ответ');
                 }
                 const { name, username, email, phone, password } = regData;
+                if (!isValidNickname(username)) {
+                    return showError(errorEl, 'Никнейм может содержать только буквы, цифры и _');
+                }
                 const salt = getUserSalt(username);
                 MASTER_KEY = CryptoJS.PBKDF2(password, salt, {
                     keySize: 256 / 32,
@@ -3121,6 +3310,7 @@
                 showMainContent();
                 showWelcomeMessage(name);
                 updateUIForAuth();
+                resetInactivityTimer();
             }
 
             function logout() {
@@ -3130,14 +3320,7 @@
                     users[currentUser].isLoggedIn = false;
                     secureSetItem('bankUsers', users);
                 }
-                MASTER_KEY = null;
-                currentUser = null;
-                realRemoveItem('currentSession');
-                realRemoveItem('MASTER_KEY');
-                updateUIForAuth();
-                document.querySelector('.main-container').classList.add('hidden');
-                document.querySelector('header').classList.add('hidden');
-                openModal('login');
+                resetToGuestState();
             }
             loadUnencryptedData();
             window.addEventListener('beforeunload', () => {
@@ -3145,32 +3328,33 @@
                     saveSession();
                 }
             });
+            ['click', 'keydown', 'scroll', 'mousemove'].forEach(event => {
+                document.addEventListener(event, resetInactivityTimer, { passive: true });
+            });
             window.onload = async () => {
                 if (realGetItem('theme') === 'light') {
                     document.body.classList.add('light-theme');
                 }
+                updateThemeIcon();
                 const savedSession = realGetItem('currentSession');
-                const savedMasterKey = realGetItem('MASTER_KEY');
-                if (savedSession && savedMasterKey) {
+                if (savedSession) {
                     try {
                         const sessionData = JSON.parse(savedSession);
-                        MASTER_KEY = savedMasterKey;
-                        const decryptedUsers = secureGetItem('bankUsers');
-                        if (decryptedUsers && decryptedUsers[sessionData.username]) {
-                            users = decryptedUsers;
-                            currentUser = sessionData.username;
-                            loadAllDataForCurrentUser();
-                            showMainContent();
-                            updateUIForAuth();
-                            return;
+                        const savedUsername = sessionData.username;
+                        const rawUsers = realGetItem('bankUsers');
+                        if (rawUsers) {
+                            const parsed = JSON.parse(rawUsers);
+                            if (parsed && typeof parsed === 'object' && parsed.encrypted && parsed.hmac) {
+                                showSessionResumeModal(savedUsername);
+                                return;
+                            }
                         }
                     } catch (e) {
-                        MASTER_KEY = null;
-                        realRemoveItem('MASTER_KEY');
                         realRemoveItem('currentSession');
                     }
                 }
-                showMainContent();
+                document.querySelector('.main-container').classList.remove('hidden');
+                document.querySelector('header').classList.remove('hidden');
                 updateUIForAuth();
                 navigateTo('about');
             };
@@ -3202,7 +3386,12 @@
             window.exportBackup = exportBackup;
             window.importBackup = importBackup;
             window.getCurrentUserData = getCurrentUserData;
+            window.resumeSession = resumeSession;
+            window.clearSessionAndShowLogin = clearSessionAndShowLogin;
+            window.resetInactivityTimer = resetInactivityTimer;
+            window.isValidNickname = isValidNickname;
+            window.updateThemeIcon = updateThemeIcon;
         })();
     </script>
 </body>
-</html> 
+</html>
