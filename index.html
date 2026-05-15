@@ -1186,6 +1186,21 @@
             cursor: pointer;
             margin-bottom: 15px;
         }
+        /* Remember me checkbox */
+        .remember-me-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 10px 0;
+            color: #FFD700;
+            font-size: 0.9rem;
+        }
+        .remember-me-container input[type="checkbox"] {
+            accent-color: #FFD700;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
         @media (min-width: 640px) {
             .glass-header {
                 padding: 12px 24px;
@@ -1956,6 +1971,7 @@
                 privateChats = {};
                 userTasks = {};
                 realRemoveItem('currentSession');
+                realRemoveItem('rememberedSession');
                 if (inactivityTimer) {
                     clearTimeout(inactivityTimer);
                     inactivityTimer = null;
@@ -2131,6 +2147,10 @@
                     <input id="loginUsername" class="form-input" placeholder="👤 Никнейм или телефон">
                     <input type="password" id="loginPassword" class="form-input" placeholder="🔑 Пароль (учтите регистр)">
                     <div id="capslock-warning" class="error-text hidden" style="color:#f39c12;">⚠️ CapsLock включен</div>
+                    <div class="remember-me-container">
+                        <input type="checkbox" id="rememberMeCheckbox">
+                        <label for="rememberMeCheckbox">Запомнить меня (оставаться в системе)</label>
+                    </div>
                 `;
                 if (requireCaptcha) {
                     const ops = ['+', '-', '×'];
@@ -2196,6 +2216,10 @@
                     </div>
                     <div id="sessionError" class="error-text hidden"></div>
                     <input type="password" id="sessionPassword" class="form-input" placeholder="🔑 Пароль">
+                    <div class="remember-me-container">
+                        <input type="checkbox" id="rememberMeCheckbox">
+                        <label for="rememberMeCheckbox">Запомнить меня (оставаться в системе)</label>
+                    </div>
                     <button class="gold-button" onclick="window.resumeSession('${username}')">🚪 Войти</button>
                     <button class="dark-button" onclick="window.clearSessionAndShowLogin()">↩ Другой аккаунт</button>
                 `;
@@ -2205,6 +2229,8 @@
             async function resumeSession(username) {
                 const passwordInput = document.getElementById('sessionPassword');
                 const errorEl = document.getElementById('sessionError');
+                const rememberMeCheckbox = document.getElementById('rememberMeCheckbox');
+                const rememberMe = rememberMeCheckbox ? rememberMeCheckbox.checked : false;
                 if (!passwordInput) return;
                 const password = passwordInput.value;
                 if (!password) {
@@ -2227,6 +2253,16 @@
                     realSetItem('savedAccounts', JSON.stringify(savedAccounts));
                     loadAllDataForCurrentUser();
                     saveSession();
+                    if (rememberMe) {
+                        const rememberedData = {
+                            username: username,
+                            encryptedPassword: CryptoJS.AES.encrypt(password, BASE_SALT).toString(),
+                            timestamp: Date.now()
+                        };
+                        realSetItem('rememberedSession', JSON.stringify(rememberedData));
+                    } else {
+                        realRemoveItem('rememberedSession');
+                    }
                     UI.closeAllModals();
                     showMainContent();
                     showWelcomeMessage(users[username].name);
@@ -2242,6 +2278,7 @@
                 MASTER_KEY = null;
                 currentUser = null;
                 realRemoveItem('currentSession');
+                realRemoveItem('rememberedSession');
                 UI.closeAllModals();
                 document.querySelector('.main-container').classList.remove('hidden');
                 document.querySelector('header').classList.remove('hidden');
@@ -3011,6 +3048,7 @@
                     MASTER_KEY = null;
                     currentUser = null;
                     realRemoveItem('currentSession');
+                    realRemoveItem('rememberedSession');
                     UI.closeAllModals();
                     updateUIForAuth();
                     updateThemeIcon();
@@ -3023,10 +3061,12 @@
             async function login() {
                 const usernameInput = document.getElementById('loginUsername');
                 const passwordInput = document.getElementById('loginPassword');
+                const rememberMeCheckbox = document.getElementById('rememberMeCheckbox');
                 const errorEl = document.getElementById('loginError');
                 if (!usernameInput || !passwordInput) return;
                 const username = usernameInput.value.trim();
                 const password = passwordInput.value;
+                const rememberMe = rememberMeCheckbox ? rememberMeCheckbox.checked : false;
                 if (!username || !password) {
                     return showError(errorEl, 'Заполните все поля');
                 }
@@ -3084,6 +3124,16 @@
                     realSetItem('savedAccounts', JSON.stringify(savedAccounts));
                     loadAllDataForCurrentUser();
                     saveSession();
+                    if (rememberMe) {
+                        const rememberedData = {
+                            username: foundUser,
+                            encryptedPassword: CryptoJS.AES.encrypt(password, BASE_SALT).toString(),
+                            timestamp: Date.now()
+                        };
+                        realSetItem('rememberedSession', JSON.stringify(rememberedData));
+                    } else {
+                        realRemoveItem('rememberedSession');
+                    }
                     UI.closeAllModals();
                     showMainContent();
                     showWelcomeMessage(users[foundUser].name);
@@ -3151,6 +3201,7 @@
                 MASTER_KEY = null;
                 currentUser = null;
                 realRemoveItem('currentSession');
+                realRemoveItem('rememberedSession');
                 updateUIForAuth();
                 updateThemeIcon();
                 document.querySelector('.main-container').classList.add('hidden');
@@ -3336,6 +3387,41 @@
                     document.body.classList.add('light-theme');
                 }
                 updateThemeIcon();
+                // Check for remembered session first
+                const rememberedSession = realGetItem('rememberedSession');
+                if (rememberedSession) {
+                    try {
+                        const rememberedData = JSON.parse(rememberedSession);
+                        const savedUsername = rememberedData.username;
+                        const encryptedPassword = rememberedData.encryptedPassword;
+                        // Decrypt password
+                        const password = CryptoJS.AES.decrypt(encryptedPassword, BASE_SALT).toString(CryptoJS.enc.Utf8);
+                        if (password) {
+                            // Auto-login with remembered credentials
+                            const tempKey = deriveKey(password, savedUsername);
+                            const decryptedUsers = secureGetItemWithKey('bankUsers', tempKey);
+                            if (decryptedUsers && decryptedUsers[savedUsername]) {
+                                const hashedPassword = hashPassword(password);
+                                if (constantTimeCompare(decryptedUsers[savedUsername].passwordHash, hashedPassword)) {
+                                    MASTER_KEY = tempKey;
+                                    users = decryptedUsers;
+                                    currentUser = savedUsername;
+                                    savedAccounts[savedUsername] = true;
+                                    realSetItem('savedAccounts', JSON.stringify(savedAccounts));
+                                    loadAllDataForCurrentUser();
+                                    saveSession();
+                                    showMainContent();
+                                    navigateTo('about');
+                                    resetInactivityTimer();
+                                    return;
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        realRemoveItem('rememberedSession');
+                    }
+                }
+                // Fallback to regular session
                 const savedSession = realGetItem('currentSession');
                 if (savedSession) {
                     try {
