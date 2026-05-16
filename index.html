@@ -11,8 +11,7 @@
     <meta name="apple-mobile-web-app-title" content="BK-Bank">
     <meta name="theme-color" content="#0a0a0a">
     <link rel="apple-touch-icon" href="png/2025-01-31_14-13-47-Photoroom.png">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js">
-    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -147,8 +146,7 @@
             animation: float 20s infinite ease-in-out;
         }
         @keyframes float {
-            0%,
-            100% {
+            0%, 100% {
                 transform: translateY(0) translateX(0);
             }
             25% {
@@ -198,8 +196,7 @@
             animation: gradientShift 4s ease infinite;
         }
         @keyframes gradientShift {
-            0%,
-            100% {
+            0%, 100% {
                 background-position: 0% 50%;
             }
             50% {
@@ -694,12 +691,8 @@
             animation: fadeIn 0.3s;
         }
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
         .modal-form {
             background: rgba(20, 20, 20, 0.98);
@@ -720,14 +713,8 @@
             box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
         }
         @keyframes modalPop {
-            from {
-                opacity: 0;
-                transform: translate(-50%, -45%) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(1);
-            }
+            from { opacity: 0; transform: translate(-50%, -45%) scale(0.95); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         }
         .form-title {
             font-size: 1.8rem;
@@ -821,24 +808,12 @@
             font-size: 0.9rem;
         }
         @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
         }
         @keyframes slideOut {
-            from {
-                opacity: 1;
-                transform: translateX(0);
-            }
-            to {
-                opacity: 0;
-                transform: translateX(50px);
-            }
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(50px); }
         }
         .step-indicator {
             display: flex;
@@ -1186,7 +1161,6 @@
             cursor: pointer;
             margin-bottom: 15px;
         }
-        /* Remember me checkbox */
         .remember-me-container {
             display: flex;
             align-items: center;
@@ -1202,89 +1176,31 @@
             cursor: pointer;
         }
         @media (min-width: 640px) {
-            .glass-header {
-                padding: 12px 24px;
-            }
-            .logo-img {
-                width: 42px;
-                height: 42px;
-            }
-            .bank-name {
-                font-size: 1.9rem;
-            }
-            .nav-link {
-                padding: 10px 18px;
-                font-size: 0.95rem;
-            }
-            .login-btn,
-            .register-btn {
-                padding: 10px 20px;
-                font-size: 0.95rem;
-            }
-            .profile-btn {
-                padding: 8px 18px;
-                font-size: 0.95rem;
-            }
-            .profile-btn img {
-                width: 28px;
-                height: 28px;
-            }
-            .theme-toggle {
-                padding: 8px 16px;
-                font-size: 0.9rem;
-            }
-            .main-container {
-                padding: 0 20px;
-            }
-            .content-card {
-                padding: 30px;
-                border-radius: 32px;
-            }
-            h2 {
-                font-size: 2.2rem;
-            }
-            h3 {
-                font-size: 1.6rem;
-            }
-            p,
-            li,
-            span,
-            div {
-                font-size: 1rem;
-            }
-            .services-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            .support-panel {
-                flex-direction: row;
-            }
-            .users-list {
-                width: 220px;
-            }
-            .chat-area {
-                flex: 1;
-            }
-            .profile-avatar {
-                width: 70px;
-                height: 70px;
-            }
+            .glass-header { padding: 12px 24px; }
+            .logo-img { width: 42px; height: 42px; }
+            .bank-name { font-size: 1.9rem; }
+            .nav-link { padding: 10px 18px; font-size: 0.95rem; }
+            .login-btn, .register-btn { padding: 10px 20px; font-size: 0.95rem; }
+            .profile-btn { padding: 8px 18px; font-size: 0.95rem; }
+            .profile-btn img { width: 28px; height: 28px; }
+            .theme-toggle { padding: 8px 16px; font-size: 0.9rem; }
+            .main-container { padding: 0 20px; }
+            .content-card { padding: 30px; border-radius: 32px; }
+            h2 { font-size: 2.2rem; }
+            h3 { font-size: 1.6rem; }
+            p, li, span, div { font-size: 1rem; }
+            .services-grid { grid-template-columns: repeat(2, 1fr); }
+            .support-panel { flex-direction: row; }
+            .users-list { width: 220px; }
+            .chat-area { flex: 1; }
+            .profile-avatar { width: 70px; height: 70px; }
         }
         @media (min-width: 1024px) {
-            .glass-header {
-                padding: 14px 32px;
-            }
-            .nav-link {
-                padding: 12px 22px;
-            }
-            .content-card {
-                padding: 36px;
-            }
-            h2 {
-                font-size: 2.5rem;
-            }
-            .services-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
+            .glass-header { padding: 14px 32px; }
+            .nav-link { padding: 12px 22px; }
+            .content-card { padding: 36px; }
+            h2 { font-size: 2.5rem; }
+            .services-grid { grid-template-columns: repeat(3, 1fr); }
         }
     </style>
 </head>
@@ -1579,9 +1495,7 @@
                     if (this.currentSection === section) return;
                     document.querySelectorAll('.nav-link').forEach(btn => {
                         btn.classList.remove('active');
-                        if (btn.dataset.section === section) {
-                            btn.classList.add('active');
-                        }
+                        if (btn.dataset.section === section) btn.classList.add('active');
                     });
                     this.currentSection = section;
                 },
@@ -1598,6 +1512,7 @@
                 }
             };
             let MASTER_KEY = null;
+            let DATA_KEY = null;
             let users = {};
             let currentUser = null;
             let bktokBalances = {};
@@ -1622,6 +1537,7 @@
             const INACTIVITY_TIMEOUT = 30 * 60 * 1000;
             const BASE_SALT = "BK_SECURE_SALT_V2_2026";
             const _realStorage = window.localStorage;
+            const _sessionStorage = window.sessionStorage;
 
             function realGetItem(key) { return _realStorage.getItem(key); }
 
@@ -1630,8 +1546,10 @@
             function realRemoveItem(key) { _realStorage.removeItem(key); }
 
             function loadUnencryptedData() {
-                failedAttempts = parseInt(sessionStorage.getItem('failedAttempts') || realGetItem('failedAttempts') || '0');
+                failedAttempts = parseInt(_sessionStorage.getItem('failedAttempts') || realGetItem('failedAttempts') || '0');
                 savedAccounts = JSON.parse(realGetItem('savedAccounts') || '{}');
+                bktokOrders = JSON.parse(realGetItem('public_bktokOrders') || '{"buy":[],"sell":[]}');
+                bktokTrades = JSON.parse(realGetItem('public_bktokTrades') || '[]');
             }
 
             function escapeHtml(text) {
@@ -1677,10 +1595,10 @@
             }
 
             function saveUserSpecificData(username, dataType, data) {
-                if (!MASTER_KEY) return;
+                if (!DATA_KEY) return;
                 try {
                     const userSpecificSalt = CryptoJS.SHA256(username + dataType + BASE_SALT).toString();
-                    const userKey = CryptoJS.PBKDF2(MASTER_KEY, userSpecificSalt, {
+                    const userKey = CryptoJS.PBKDF2(DATA_KEY, userSpecificSalt, {
                         keySize: 256 / 32,
                         iterations: 10000,
                         hasher: CryptoJS.algo.SHA256
@@ -1696,13 +1614,13 @@
             }
 
             function loadUserSpecificData(username, dataType) {
-                if (!MASTER_KEY) return null;
+                if (!DATA_KEY) return null;
                 const storageKey = getUserStorageKey(username, dataType);
                 const stored = realGetItem(storageKey);
                 if (!stored) return null;
                 try {
                     const userSpecificSalt = CryptoJS.SHA256(username + dataType + BASE_SALT).toString();
-                    const userKey = CryptoJS.PBKDF2(MASTER_KEY, userSpecificSalt, {
+                    const userKey = CryptoJS.PBKDF2(DATA_KEY, userSpecificSalt, {
                         keySize: 256 / 32,
                         iterations: 10000,
                         hasher: CryptoJS.algo.SHA256
@@ -1758,14 +1676,23 @@
                 try {
                     const { encrypted, hmac } = JSON.parse(stored);
                     const computedHmac = CryptoJS.HmacSHA256(encrypted, tempKey).toString();
-                    if (computedHmac !== hmac) {
-                        return null;
-                    }
+                    if (computedHmac !== hmac) return null;
                     const decrypted = CryptoJS.AES.decrypt(encrypted, tempKey).toString(CryptoJS.enc.Utf8);
                     return JSON.parse(decrypted);
                 } catch (e) {
                     return null;
                 }
+            }
+
+            function encryptDataKeyWithPassword(dataKey, password, username) {
+                const tempKey = deriveKey(password, username);
+                return CryptoJS.AES.encrypt(dataKey, tempKey).toString();
+            }
+
+            function decryptDataKeyWithPassword(encryptedDataKey, password, username) {
+                const tempKey = deriveKey(password, username);
+                const decrypted = CryptoJS.AES.decrypt(encryptedDataKey, tempKey).toString(CryptoJS.enc.Utf8);
+                return decrypted || null;
             }
 
             function resetInactivityTimer() {
@@ -1788,7 +1715,7 @@
 
             function updateBalance(user, amount, operation) {
                 if (!currentUser) return false;
-                if (user !== currentUser && operation !== 'admin_mint' && operation !== 'rollback') return false;
+                if (user !== currentUser) return false;
                 if (Math.abs(amount) > 1000000 && operation !== 'rollback') return false;
                 bktokBalances[user] = (bktokBalances[user] || 0) + amount;
                 if (bktokBalances[user] < 0) bktokBalances[user] = 0;
@@ -1838,10 +1765,8 @@
                         if (sellerAvailable < amount) { j++; continue; }
                         unfreezeBalance(buy.user, amount * price + fee);
                         unfreezeBalance(sell.user, amount);
-                        bktokBalances[buy.user] = (bktokBalances[buy.user] || 0) - (amount * price + fee);
-                        bktokBalances[buy.user] = (bktokBalances[buy.user] || 0) + amount;
-                        bktokBalances[sell.user] = (bktokBalances[sell.user] || 0) - amount;
-                        bktokBalances[sell.user] = (bktokBalances[sell.user] || 0) + (amount * price - fee);
+                        bktokBalances[buy.user] = (bktokBalances[buy.user] || 0) - (amount * price + fee) + amount;
+                        bktokBalances[sell.user] = (bktokBalances[sell.user] || 0) - amount + (amount * price - fee);
                         saveUserSpecificData(buy.user, 'balance', bktokBalances[buy.user]);
                         saveUserSpecificData(sell.user, 'balance', bktokBalances[sell.user]);
                         trades.push({
@@ -1861,27 +1786,20 @@
                 }
                 if (trades.length > 0) {
                     bktokTrades.push(...trades);
-                    secureSetItem('bktokTrades', bktokTrades);
-                    secureSetItem('bktokOrders', bktokOrders);
-                } else {
-                    secureSetItem('bktokOrders', bktokOrders);
+                    realSetItem('public_bktokTrades', JSON.stringify(bktokTrades));
                 }
+                realSetItem('public_bktokOrders', JSON.stringify(bktokOrders));
             }
 
             function showToast(message, type = 'info') {
                 const toast = document.createElement('div');
                 toast.className = 'toast-message';
                 toast.style.cssText = `
-                    position: fixed;
-                    top: 80px;
-                    right: 20px;
+                    position: fixed; top: 80px; right: 20px;
                     background: ${type === 'success' ? '#2ecc71' : type === 'error' ? '#e74c3c' : type === 'warning' ? '#f39c12' : '#FFD700'};
                     color: ${type === 'info' ? '#0a0a0a' : 'white'};
-                    padding: 15px 20px;
-                    border-radius: 40px;
-                    z-index: 10003;
-                    animation: slideIn 0.4s ease;
-                    font-weight: 600;
+                    padding: 15px 20px; border-radius: 40px; z-index: 10003;
+                    animation: slideIn 0.4s ease; font-weight: 600;
                     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
                 `;
                 toast.textContent = message;
@@ -1918,11 +1836,7 @@
             function updateHowToStartVisibility() {
                 const howToStartSection = document.getElementById('how-to-start-section');
                 if (howToStartSection) {
-                    if (currentUser) {
-                        howToStartSection.classList.add('hidden');
-                    } else {
-                        howToStartSection.classList.remove('hidden');
-                    }
+                    howToStartSection.classList.toggle('hidden', !!currentUser);
                 }
             }
 
@@ -1963,6 +1877,7 @@
                 UI.clearAllIntervals();
                 UI.closeAllModals();
                 MASTER_KEY = null;
+                DATA_KEY = null;
                 currentUser = null;
                 frozenBalances = {};
                 bktokOrders = { buy: [], sell: [] };
@@ -1970,8 +1885,7 @@
                 allSupportChats = {};
                 privateChats = {};
                 userTasks = {};
-                realRemoveItem('currentSession');
-                realRemoveItem('rememberedSession');
+                _sessionStorage.removeItem('currentSession');
                 if (inactivityTimer) {
                     clearTimeout(inactivityTimer);
                     inactivityTimer = null;
@@ -1984,13 +1898,11 @@
             }
 
             function loadAllDataForCurrentUser() {
-                if (!MASTER_KEY || !currentUser) return;
+                if (!DATA_KEY || !currentUser) return;
                 bktokBalances[currentUser] = loadUserSpecificData(currentUser, 'balance') || 10;
                 frozenBalances[currentUser] = loadUserSpecificData(currentUser, 'frozen') || 0;
                 allSupportChats[currentUser] = loadUserSpecificData(currentUser, 'supportChats') || [];
                 userTasks[currentUser] = loadUserSpecificData(currentUser, 'tasks') || {};
-                bktokOrders = secureGetItem('bktokOrders') || { buy: [], sell: [] };
-                bktokTrades = secureGetItem('bktokTrades') || [];
                 privateChats = loadAllPrivateChatsForCurrentUser();
                 if (!allSupportChats[currentUser] || allSupportChats[currentUser].length === 0) {
                     allSupportChats[currentUser] = [{
@@ -2028,7 +1940,7 @@
                         username: currentUser,
                         timestamp: Date.now()
                     };
-                    realSetItem('currentSession', JSON.stringify(sessionData));
+                    _sessionStorage.setItem('currentSession', JSON.stringify(sessionData));
                 }
             }
 
@@ -2064,44 +1976,16 @@
                     if (targetEl) targetEl.classList.remove('hidden');
                 }
                 const sectionHandlers = {
-                    'about': () => {
-                        updateHowToStartVisibility();
-                    },
-                    'cards': () => {
-                        renderCardsStack();
-                    },
-                    'bktok': () => {
-                        if (currentUser) {
-                            loadBKtok();
-                            startChartUpdates();
-                        }
-                    },
-                    'tasks': () => {
-                        if (currentUser) renderTasks();
-                    },
-                    'cases': () => {
-                        if (currentUser) renderCases();
-                    },
-                    'support': () => {
-                        renderAISupport();
-                    },
-                    'chats': () => {
-                        if (currentUser) renderPrivateChats();
-                    },
-                    'profile': () => {
-                        if (currentUser) {
-                            showProfile();
-                        } else {
-                            openModal('login');
-                        }
-                    }
+                    'cards': () => { renderCardsStack(); },
+                    'bktok': () => { if (currentUser) { loadBKtok(); startChartUpdates(); } },
+                    'tasks': () => { if (currentUser) renderTasks(); },
+                    'cases': () => { if (currentUser) renderCases(); },
+                    'support': () => { renderAISupport(); },
+                    'chats': () => { if (currentUser) renderPrivateChats(); },
+                    'profile': () => { if (currentUser) { showProfile(); } else { openModal('login'); } }
                 };
-                if (sectionHandlers[section]) {
-                    sectionHandlers[section]();
-                }
-                setTimeout(() => {
-                    UI.isNavigating = false;
-                }, 100);
+                if (sectionHandlers[section]) sectionHandlers[section]();
+                setTimeout(() => { UI.isNavigating = false; }, 100);
                 resetInactivityTimer();
             }
 
@@ -2112,27 +1996,15 @@
                 overlay.id = 'modal-overlay';
                 overlay.addEventListener('click', () => {
                     UI.closeAllModals();
-                    if (currentUser) {
-                        navigateTo('about');
-                    }
+                    if (currentUser) navigateTo('about');
                 });
                 document.body.appendChild(overlay);
                 switch (type) {
-                    case 'login':
-                        showLoginFormModal();
-                        break;
-                    case 'register':
-                        showRegistrationFormModal();
-                        break;
-                    case 'accountSwitcher':
-                        showAccountSwitcherModalContent();
-                        break;
-                    case 'editProfile':
-                        showEditProfileFormModal(data.user);
-                        break;
-                    case 'backup':
-                        showBackupModalContent();
-                        break;
+                    case 'login': showLoginFormModal(); break;
+                    case 'register': showRegistrationFormModal(); break;
+                    case 'accountSwitcher': showAccountSwitcherModalContent(); break;
+                    case 'editProfile': showEditProfileFormModal(data.user); break;
+                    case 'backup': showBackupModalContent(); break;
                 }
             }
 
@@ -2147,10 +2019,6 @@
                     <input id="loginUsername" class="form-input" placeholder="👤 Никнейм или телефон">
                     <input type="password" id="loginPassword" class="form-input" placeholder="🔑 Пароль (учтите регистр)">
                     <div id="capslock-warning" class="error-text hidden" style="color:#f39c12;">⚠️ CapsLock включен</div>
-                    <div class="remember-me-container">
-                        <input type="checkbox" id="rememberMeCheckbox">
-                        <label for="rememberMeCheckbox">Запомнить меня (оставаться в системе)</label>
-                    </div>
                 `;
                 if (requireCaptcha) {
                     const ops = ['+', '-', '×'];
@@ -2183,11 +2051,7 @@
                     passwordInput.addEventListener('keyup', function(event) {
                         const warning = document.getElementById('capslock-warning');
                         if (warning) {
-                            if (event.getModifierState('CapsLock')) {
-                                warning.classList.remove('hidden');
-                            } else {
-                                warning.classList.add('hidden');
-                            }
+                            warning.classList.toggle('hidden', !event.getModifierState('CapsLock'));
                         }
                     });
                 }
@@ -2200,9 +2064,7 @@
                 overlay.id = 'modal-overlay';
                 overlay.addEventListener('click', () => {
                     UI.closeAllModals();
-                    if (currentUser) {
-                        navigateTo('about');
-                    }
+                    if (currentUser) navigateTo('about');
                 });
                 document.body.appendChild(overlay);
                 const modal = document.createElement('div');
@@ -2216,10 +2078,6 @@
                     </div>
                     <div id="sessionError" class="error-text hidden"></div>
                     <input type="password" id="sessionPassword" class="form-input" placeholder="🔑 Пароль">
-                    <div class="remember-me-container">
-                        <input type="checkbox" id="rememberMeCheckbox">
-                        <label for="rememberMeCheckbox">Запомнить меня (оставаться в системе)</label>
-                    </div>
                     <button class="gold-button" onclick="window.resumeSession('${username}')">🚪 Войти</button>
                     <button class="dark-button" onclick="window.clearSessionAndShowLogin()">↩ Другой аккаунт</button>
                 `;
@@ -2229,40 +2087,27 @@
             async function resumeSession(username) {
                 const passwordInput = document.getElementById('sessionPassword');
                 const errorEl = document.getElementById('sessionError');
-                const rememberMeCheckbox = document.getElementById('rememberMeCheckbox');
-                const rememberMe = rememberMeCheckbox ? rememberMeCheckbox.checked : false;
                 if (!passwordInput) return;
                 const password = passwordInput.value;
-                if (!password) {
-                    return showError(errorEl, 'Введите пароль');
-                }
+                if (!password) return showError(errorEl, 'Введите пароль');
                 try {
                     const tempKey = deriveKey(password, username);
                     const decryptedUsers = secureGetItemWithKey('bankUsers', tempKey);
-                    if (!decryptedUsers || !decryptedUsers[username]) {
-                        return showError(errorEl, 'Неверный пароль');
-                    }
+                    if (!decryptedUsers || !decryptedUsers[username]) return showError(errorEl, 'Неверный пароль');
                     const hashedPassword = hashPassword(password);
-                    if (!constantTimeCompare(decryptedUsers[username].passwordHash, hashedPassword)) {
-                        return showError(errorEl, 'Неверный пароль');
-                    }
+                    if (!constantTimeCompare(decryptedUsers[username].passwordHash, hashedPassword)) return showError(errorEl, 'Неверный пароль');
+                    const encryptedDataKey = realGetItem(`dataKey_${username}`);
+                    if (!encryptedDataKey) return showError(errorEl, 'Данные повреждены');
+                    const dataKey = decryptDataKeyWithPassword(encryptedDataKey, password, username);
+                    if (!dataKey) return showError(errorEl, 'Ошибка расшифровки данных');
                     MASTER_KEY = tempKey;
+                    DATA_KEY = dataKey;
                     users = decryptedUsers;
                     currentUser = username;
                     savedAccounts[username] = true;
                     realSetItem('savedAccounts', JSON.stringify(savedAccounts));
                     loadAllDataForCurrentUser();
                     saveSession();
-                    if (rememberMe) {
-                        const rememberedData = {
-                            username: username,
-                            encryptedPassword: CryptoJS.AES.encrypt(password, BASE_SALT).toString(),
-                            timestamp: Date.now()
-                        };
-                        realSetItem('rememberedSession', JSON.stringify(rememberedData));
-                    } else {
-                        realRemoveItem('rememberedSession');
-                    }
                     UI.closeAllModals();
                     showMainContent();
                     showWelcomeMessage(users[username].name);
@@ -2276,9 +2121,9 @@
 
             function clearSessionAndShowLogin() {
                 MASTER_KEY = null;
+                DATA_KEY = null;
                 currentUser = null;
-                realRemoveItem('currentSession');
-                realRemoveItem('rememberedSession');
+                _sessionStorage.removeItem('currentSession');
                 UI.closeAllModals();
                 document.querySelector('.main-container').classList.remove('hidden');
                 document.querySelector('header').classList.remove('hidden');
@@ -2349,43 +2194,25 @@
                     regData.username = document.getElementById('regUsername').value.trim();
                     regData.password = document.getElementById('regPassword').value;
                     const confirm = document.getElementById('regConfirm').value;
-                    if (!regData.name || !regData.username || !regData.password || !confirm) {
-                        return showError(errorEl, 'Заполните все поля');
-                    }
-                    if (!isValidNickname(regData.username)) {
-                        return showError(errorEl, 'Никнейм может содержать только буквы, цифры и _ (мин. 3 символа)');
-                    }
-                    if (regData.password !== confirm) {
-                        return showError(errorEl, 'Пароли не совпадают');
-                    }
-                    if (regData.password.length < 6) {
-                        return showError(errorEl, 'Пароль должен быть не менее 6 символов');
-                    }
+                    if (!regData.name || !regData.username || !regData.password || !confirm) return showError(errorEl, 'Заполните все поля');
+                    if (!isValidNickname(regData.username)) return showError(errorEl, 'Никнейм может содержать только буквы, цифры и _ (мин. 3 символа)');
+                    if (regData.password !== confirm) return showError(errorEl, 'Пароли не совпадают');
+                    if (regData.password.length < 6) return showError(errorEl, 'Пароль должен быть не менее 6 символов');
                 } else if (regStep === 2) {
                     regData.email = document.getElementById('regEmail').value.trim();
                     regData.phone = document.getElementById('regPhone').value.trim();
-                    if (!regData.email && !regData.phone) {
-                        return showError(errorEl, 'Укажите email или телефон');
-                    }
+                    if (!regData.email && !regData.phone) return showError(errorEl, 'Укажите email или телефон');
                 }
                 regStep++;
                 const modal = document.querySelector('.modal-form');
-                if (modal) {
-                    renderRegStepInModal(modal);
-                } else {
-                    showRegistrationFormModal();
-                }
+                if (modal) { renderRegStepInModal(modal); } else { showRegistrationFormModal(); }
             }
 
             function prevRegStep() {
                 if (regStep > 1) {
                     regStep--;
                     const modal = document.querySelector('.modal-form');
-                    if (modal) {
-                        renderRegStepInModal(modal);
-                    } else {
-                        showRegistrationFormModal();
-                    }
+                    if (modal) { renderRegStepInModal(modal); } else { showRegistrationFormModal(); }
                 }
             }
 
@@ -2431,7 +2258,7 @@
                     <input id="editName" class="form-input" placeholder="Имя" value="${escapeHtml(user.name || '')}">
                     <input id="editEmail" class="form-input" placeholder="Email" value="${escapeHtml(user.email || '')}">
                     <input id="editPhone" class="form-input" placeholder="Телефон" value="${escapeHtml(user.phone || '')}">
-                    <input type="password" id="editPassword" class="form-input" placeholder="Новый пароль">
+                    <input type="password" id="editPassword" class="form-input" placeholder="Новый пароль (если нужно)">
                     <button class="gold-button" onclick="window.saveProfile()">Сохранить</button>
                     <button class="dark-button" onclick="window.closeModalAndGoToProfile()">Отмена</button>
                 `;
@@ -2473,9 +2300,7 @@
 
             function closeModalAndGoToProfile() {
                 UI.closeAllModals();
-                if (currentUser) {
-                    navigateTo('profile');
-                }
+                if (currentUser) navigateTo('profile');
             }
 
             function toggleTheme() {
@@ -2483,6 +2308,7 @@
                 realSetItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
                 updateThemeIcon();
             }
+
             const cardList = [
                 { img: 'png/2025-01-30_15-13-31-Photoroom.png' },
                 { img: 'png/2025-01-30_15-58-26-Photoroom.png' },
@@ -2499,10 +2325,8 @@
                 isStackExpanded = false;
                 container.innerHTML = cardList.map((card, i) => `
                     <div class="stack-card" style="
-                        position: absolute;
-                        width: 220px;
-                        transition: all 0.5s;
-                        cursor: pointer;
+                        position: absolute; width: 220px;
+                        transition: all 0.5s; cursor: pointer;
                         filter: drop-shadow(0 15px 30px rgba(0,0,0,0.6));
                         transform: rotate(${[-8,-4,0,4,8,12,16][i]}deg) translateX(${[-25,-15,-5,0,5,15,25][i]}px);
                         z-index: ${i+1};
@@ -2518,15 +2342,13 @@
                 const cards = container.querySelectorAll('.stack-card');
                 if (!isStackExpanded) {
                     cards.forEach((card, i) => {
-                        card.style.transform =
-                            `translateX(${(i-3)*110}px) translateY(${Math.abs(i-3)*6}px) rotate(${(i-3)*5}deg)`;
+                        card.style.transform = `translateX(${(i-3)*110}px) translateY(${Math.abs(i-3)*6}px) rotate(${(i-3)*5}deg)`;
                         card.style.zIndex = i + 10;
                     });
                     isStackExpanded = true;
                 } else {
                     cards.forEach((card, i) => {
-                        card.style.transform =
-                            `rotate(${[-8,-4,0,4,8,12,16][i]}deg) translateX(${[-25,-15,-5,0,5,15,25][i]}px)`;
+                        card.style.transform = `rotate(${[-8,-4,0,4,8,12,16][i]}deg) translateX(${[-25,-15,-5,0,5,15,25][i]}px)`;
                         card.style.zIndex = i + 1;
                     });
                     isStackExpanded = false;
@@ -2560,9 +2382,7 @@
             function startChartUpdates() {
                 if (chartInterval) clearInterval(chartInterval);
                 chartInterval = setInterval(() => {
-                    if (currentUser && UI.currentSection === 'bktok') {
-                        renderChart();
-                    }
+                    if (currentUser && UI.currentSection === 'bktok') renderChart();
                 }, 3000);
             }
 
@@ -2610,10 +2430,7 @@
                     const height = ((b.close - min) / range) * 120 + 40;
                     return `
                         <div class="chart-bar-wrapper">
-                            <div class="chart-bar ${b.isRed ? 'red' : ''}" 
-                                 style="height:${height}px;" 
-                                 title="O:${b.open.toFixed(2)} H:${b.high.toFixed(2)} L:${b.low.toFixed(2)} C:${b.close.toFixed(2)}">
-                            </div>
+                            <div class="chart-bar ${b.isRed ? 'red' : ''}" style="height:${height}px;" title="O:${b.open.toFixed(2)} H:${b.high.toFixed(2)} L:${b.low.toFixed(2)} C:${b.close.toFixed(2)}"></div>
                             <div class="chart-bar-value">${b.close.toFixed(2)}</div>
                         </div>
                     `;
@@ -2664,18 +2481,14 @@
                                 <span>${o.side === 'buy' ? '🟢 Покупка' : '🔴 Продажа'} ${o.amount.toFixed(2)} BK @ ${o.price.toFixed(2)} ₽</span>
                                 <button onclick="cancelOrder('${o.id}')" style="background:transparent; border:none; color:#ff5e5e; cursor:pointer;">✕</button>
                             </div>
-                        `).join('') :
-                        '<p style="color:#888;">Нет активных ордеров</p>';
+                        `).join('') : '<p style="color:#888;">Нет активных ордеров</p>';
                 }
             }
 
             function renderTradeHistory() {
                 const container = document.getElementById('trade-history');
                 if (!container) return;
-                const userTrades = bktokTrades
-                    .filter(t => t.buyer === currentUser || t.seller === currentUser)
-                    .slice(-10)
-                    .reverse();
+                const userTrades = bktokTrades.filter(t => t.buyer === currentUser || t.seller === currentUser).slice(-10).reverse();
                 container.innerHTML = userTrades.length ?
                     userTrades.map(t => `
                         <div style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.05);">
@@ -2685,15 +2498,16 @@
                             ${t.amount.toFixed(2)} BK @ ${t.price.toFixed(2)} ₽ 
                             <small>${new Date(t.time).toLocaleTimeString()}</small>
                         </div>
-                    `).join('') :
-                    '<p style="color:#888;">Нет сделок</p>';
+                    `).join('') : '<p style="color:#888;">Нет сделок</p>';
             }
 
             function createOrder(side) {
-                const price = parseFloat(document.getElementById('order-price').value);
-                const amount = parseFloat(document.getElementById('order-amount').value);
+                const priceEl = document.getElementById('order-price');
+                const amountEl = document.getElementById('order-amount');
+                const price = parseFloat(priceEl.value);
+                const amount = parseFloat(amountEl.value);
                 if (!price || !amount || price <= 0 || amount <= 0) {
-                    alert('Введите корректные цену и количество');
+                    alert('Введите корректные положительные цену и количество');
                     return;
                 }
                 const fee = amount * price * 0.001;
@@ -2719,8 +2533,7 @@
                     }
                 }
                 const order = {
-                    id: crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(
-                    36).substr(2, 9),
+                    id: crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).substr(2, 9),
                     user: currentUser,
                     side: side,
                     price: price,
@@ -2728,7 +2541,7 @@
                     created: Date.now()
                 };
                 bktokOrders[side].push(order);
-                secureSetItem('bktokOrders', bktokOrders);
+                realSetItem('public_bktokOrders', JSON.stringify(bktokOrders));
                 matchOrders();
                 loadBKtok();
             }
@@ -2748,10 +2561,11 @@
                 }
                 bktokOrders.buy = bktokOrders.buy.filter(o => o.id != id);
                 bktokOrders.sell = bktokOrders.sell.filter(o => o.id != id);
-                secureSetItem('bktokOrders', bktokOrders);
+                realSetItem('public_bktokOrders', JSON.stringify(bktokOrders));
                 loadBKtok();
                 showToast('✅ Ордер отменен, средства разморожены', 'success');
             }
+
             const tasks = [
                 { id: 'daily', name: 'Ежедневный вход', reward: 10, cooldown: 86400000 },
                 { id: 'profile', name: 'Заполнить профиль', reward: 50, once: true },
@@ -2765,8 +2579,7 @@
                 const container = document.getElementById('tasks-container');
                 container.innerHTML = tasks.map(task => {
                     const completed = userTasks[currentUser][task.id];
-                    const canComplete = !completed || (task.cooldown && Date.now() - completed > task
-                        .cooldown);
+                    const canComplete = !completed || (task.cooldown && Date.now() - completed > task.cooldown);
                     return `
                         <div class="task-item ${!canComplete ? 'completed' : ''}" ${canComplete ? `onclick="completeTask('${task.id}')"` : ''}>
                             <strong>${escapeHtml(task.name)}</strong>
@@ -2791,6 +2604,7 @@
                 renderTasks();
                 showToast(`+${task.reward} BK!`, 'success');
             }
+
             const cases = [
                 { name: 'Обычный', price: 5, rewards: [1, 2, 3, 5, 8, 10] },
                 { name: 'Редкий', price: 20, rewards: [5, 10, 15, 25, 50, 100] },
@@ -2861,11 +2675,7 @@
                 const input = document.getElementById('ai-chat-input');
                 const text = input.value.trim();
                 if (!text) return;
-                allSupportChats[currentUser].push({
-                    from: currentUser,
-                    text: text,
-                    time: new Date().toISOString()
-                });
+                allSupportChats[currentUser].push({ from: currentUser, text: text, time: new Date().toISOString() });
                 saveUserSpecificData(currentUser, 'supportChats', allSupportChats[currentUser]);
                 input.value = '';
                 loadAIMessages();
@@ -2876,11 +2686,7 @@
                     } else if (text.toLowerCase().includes('привет')) {
                         response = '👋 Здравствуйте! Чем могу помочь?';
                     }
-                    allSupportChats[currentUser].push({
-                        from: 'ai',
-                        text: response,
-                        time: new Date().toISOString()
-                    });
+                    allSupportChats[currentUser].push({ from: 'ai', text: response, time: new Date().toISOString() });
                     saveUserSpecificData(currentUser, 'supportChats', allSupportChats[currentUser]);
                     loadAIMessages();
                 }, 800);
@@ -2897,8 +2703,7 @@
                 `;
                 myChats.forEach(id => {
                     const other = id.split('-').find(u => u !== currentUser);
-                    html +=
-                        `<div class="user-item" onclick="openPrivateChat('${id}')"><strong>${escapeHtml(other)}</strong></div>`;
+                    html += `<div class="user-item" onclick="openPrivateChat('${id}')"><strong>${escapeHtml(other)}</strong></div>`;
                 });
                 html += `</div><div class="chat-area">`;
                 if (selectedPrivateChat) {
@@ -2959,14 +2764,8 @@
                 const input = document.getElementById('private-chat-input');
                 const text = input.value.trim();
                 if (!text || !selectedPrivateChat) return;
-                if (!privateChats[selectedPrivateChat]) {
-                    privateChats[selectedPrivateChat] = [];
-                }
-                privateChats[selectedPrivateChat].push({
-                    from: currentUser,
-                    text: text,
-                    time: new Date().toISOString()
-                });
+                if (!privateChats[selectedPrivateChat]) privateChats[selectedPrivateChat] = [];
+                privateChats[selectedPrivateChat].push({ from: currentUser, text: text, time: new Date().toISOString() });
                 const chatKey = 'chat_' + selectedPrivateChat;
                 saveUserSpecificData(currentUser, chatKey, privateChats[selectedPrivateChat]);
                 input.value = '';
@@ -3012,9 +2811,7 @@
 
             function destroyAccount() {
                 if (!currentUser) return;
-                if (confirm(
-                        '⚠️ ВЫ УВЕРЕНЫ?\n\nЭто действие НЕОБРАТИМО удалит ваш аккаунт и все связанные данные:\n- Баланс BK\n- Историю сделок\n- Чаты и сообщения\n- Все настройки профиля\n\nДля подтверждения нажмите "OK"'
-                        )) {
+                if (confirm('⚠️ ВЫ УВЕРЕНЫ?\n\nЭто действие НЕОБРАТИМО удалит ваш аккаунт и все связанные данные:\n- Баланс BK\n- Историю сделок\n- Чаты и сообщения\n- Все настройки профиля\n\nДля подтверждения нажмите "OK"')) {
                     const deletedUser = currentUser;
                     delete users[deletedUser];
                     delete bktokBalances[deletedUser];
@@ -3023,12 +2820,11 @@
                     delete allSupportChats[deletedUser];
                     delete savedAccounts[deletedUser];
                     Object.keys(privateChats).forEach(chatId => {
-                        if (chatId.includes(deletedUser)) {
-                            delete privateChats[chatId];
-                        }
+                        if (chatId.includes(deletedUser)) delete privateChats[chatId];
                     });
                     bktokOrders.buy = bktokOrders.buy.filter(o => o.user !== deletedUser);
                     bktokOrders.sell = bktokOrders.sell.filter(o => o.user !== deletedUser);
+                    realSetItem('public_bktokOrders', JSON.stringify(bktokOrders));
                     const storageKeysToRemove = [
                         getUserStorageKey(deletedUser, 'balance'),
                         getUserStorageKey(deletedUser, 'frozen'),
@@ -3038,17 +2834,15 @@
                     storageKeysToRemove.forEach(key => realRemoveItem(key));
                     for (let i = _realStorage.length - 1; i >= 0; i--) {
                         const key = _realStorage.key(i);
-                        if (key && key.startsWith('chat_') && key.includes(deletedUser)) {
-                            realRemoveItem(key);
-                        }
+                        if (key && key.startsWith('chat_') && key.includes(deletedUser)) realRemoveItem(key);
                     }
+                    realRemoveItem(`dataKey_${deletedUser}`);
                     secureSetItem('bankUsers', users);
-                    secureSetItem('bktokOrders', bktokOrders);
                     realSetItem('savedAccounts', JSON.stringify(savedAccounts));
                     MASTER_KEY = null;
+                    DATA_KEY = null;
                     currentUser = null;
-                    realRemoveItem('currentSession');
-                    realRemoveItem('rememberedSession');
+                    _sessionStorage.removeItem('currentSession');
                     UI.closeAllModals();
                     updateUIForAuth();
                     updateThemeIcon();
@@ -3058,28 +2852,23 @@
                     showToast('✅ Аккаунт полностью удален!', 'success');
                 }
             }
+
             async function login() {
                 const usernameInput = document.getElementById('loginUsername');
                 const passwordInput = document.getElementById('loginPassword');
-                const rememberMeCheckbox = document.getElementById('rememberMeCheckbox');
                 const errorEl = document.getElementById('loginError');
                 if (!usernameInput || !passwordInput) return;
                 const username = usernameInput.value.trim();
                 const password = passwordInput.value;
-                const rememberMe = rememberMeCheckbox ? rememberMeCheckbox.checked : false;
-                if (!username || !password) {
-                    return showError(errorEl, 'Заполните все поля');
-                }
+                if (!username || !password) return showError(errorEl, 'Заполните все поля');
                 if (requireCaptcha) {
                     const captchaInput = document.getElementById('loginCaptcha');
                     if (captchaInput) {
                         const captcha = captchaInput.value.trim();
-                        if (!captcha) {
-                            return showError(errorEl, 'Введите ответ капчи');
-                        }
+                        if (!captcha) return showError(errorEl, 'Введите ответ капчи');
                         if (parseInt(captcha) !== loginCaptchaAnswer) {
                             failedAttempts++;
-                            sessionStorage.setItem('failedAttempts', failedAttempts);
+                            _sessionStorage.setItem('failedAttempts', failedAttempts);
                             realSetItem('failedAttempts', failedAttempts);
                             openModal('login');
                             return showError(errorEl, 'Неверная капча');
@@ -3091,7 +2880,7 @@
                     const decryptedUsers = secureGetItemWithKey('bankUsers', tempKey);
                     if (!decryptedUsers) {
                         failedAttempts++;
-                        sessionStorage.setItem('failedAttempts', failedAttempts);
+                        _sessionStorage.setItem('failedAttempts', failedAttempts);
                         realSetItem('failedAttempts', failedAttempts);
                         return showError(errorEl, 'Неверный логин или пароль');
                     }
@@ -3103,37 +2892,32 @@
                     }
                     if (!foundUser) {
                         failedAttempts++;
-                        sessionStorage.setItem('failedAttempts', failedAttempts);
+                        _sessionStorage.setItem('failedAttempts', failedAttempts);
                         realSetItem('failedAttempts', failedAttempts);
                         return showError(errorEl, 'Пользователь не найден');
                     }
                     const hashedPassword = hashPassword(password);
                     if (!constantTimeCompare(decryptedUsers[foundUser].passwordHash, hashedPassword)) {
                         failedAttempts++;
-                        sessionStorage.setItem('failedAttempts', failedAttempts);
+                        _sessionStorage.setItem('failedAttempts', failedAttempts);
                         realSetItem('failedAttempts', failedAttempts);
                         return showError(errorEl, 'Неверный пароль');
                     }
+                    const encryptedDataKey = realGetItem(`dataKey_${foundUser}`);
+                    if (!encryptedDataKey) return showError(errorEl, 'Данные аккаунта повреждены');
+                    const dataKey = decryptDataKeyWithPassword(encryptedDataKey, password, foundUser);
+                    if (!dataKey) return showError(errorEl, 'Ошибка расшифровки данных');
                     failedAttempts = 0;
-                    sessionStorage.removeItem('failedAttempts');
+                    _sessionStorage.removeItem('failedAttempts');
                     realSetItem('failedAttempts', '0');
                     MASTER_KEY = tempKey;
+                    DATA_KEY = dataKey;
                     users = decryptedUsers;
                     currentUser = foundUser;
                     savedAccounts[foundUser] = true;
                     realSetItem('savedAccounts', JSON.stringify(savedAccounts));
                     loadAllDataForCurrentUser();
                     saveSession();
-                    if (rememberMe) {
-                        const rememberedData = {
-                            username: foundUser,
-                            encryptedPassword: CryptoJS.AES.encrypt(password, BASE_SALT).toString(),
-                            timestamp: Date.now()
-                        };
-                        realSetItem('rememberedSession', JSON.stringify(rememberedData));
-                    } else {
-                        realRemoveItem('rememberedSession');
-                    }
                     UI.closeAllModals();
                     showMainContent();
                     showWelcomeMessage(users[foundUser].name);
@@ -3142,17 +2926,15 @@
                 } catch (error) {
                     console.error('Ошибка входа:', error);
                     failedAttempts++;
-                    sessionStorage.setItem('failedAttempts', failedAttempts);
+                    _sessionStorage.setItem('failedAttempts', failedAttempts);
                     realSetItem('failedAttempts', failedAttempts);
                     return showError(errorEl, 'Ошибка входа. Попробуйте снова.');
                 }
             }
 
             function switchToAccount(username) {
-                if (!username) {
-                    showToast('Аккаунт не указан', 'error');
-                    return;
-                }
+                if (!username) { showToast('Аккаунт не указан', 'error'); return; }
+                if (!users[username]) { showToast('Аккаунт не найден в системе', 'error'); return; }
                 UI.closeAllModals();
                 const password = prompt(`Для переключения на аккаунт "${username}" введите пароль:`);
                 if (!password) return;
@@ -3168,10 +2950,19 @@
                         showToast('Неверный пароль!', 'error');
                         return;
                     }
-                    if (currentUser) {
-                        savedAccounts[currentUser] = true;
+                    const encryptedDataKey = realGetItem(`dataKey_${username}`);
+                    if (!encryptedDataKey) {
+                        showToast('Данные аккаунта повреждены', 'error');
+                        return;
                     }
+                    const dataKey = decryptDataKeyWithPassword(encryptedDataKey, password, username);
+                    if (!dataKey) {
+                        showToast('Ошибка расшифровки данных', 'error');
+                        return;
+                    }
+                    if (currentUser) savedAccounts[currentUser] = true;
                     MASTER_KEY = tempKey;
+                    DATA_KEY = dataKey;
                     users = allUsers;
                     currentUser = username;
                     savedAccounts[username] = true;
@@ -3199,16 +2990,14 @@
             function addNewAccount() {
                 UI.closeAllModals();
                 MASTER_KEY = null;
+                DATA_KEY = null;
                 currentUser = null;
-                realRemoveItem('currentSession');
-                realRemoveItem('rememberedSession');
+                _sessionStorage.removeItem('currentSession');
                 updateUIForAuth();
                 updateThemeIcon();
                 document.querySelector('.main-container').classList.add('hidden');
                 document.querySelector('header').classList.add('hidden');
-                setTimeout(() => {
-                    openModal('login');
-                }, 300);
+                setTimeout(() => { openModal('login'); }, 300);
             }
 
             function saveProfile() {
@@ -3219,11 +3008,28 @@
                 if (name) users[currentUser].name = name;
                 if (email) users[currentUser].email = email;
                 if (phone && /^\+7\d{10}$/.test(phone)) users[currentUser].phone = phone;
-                if (pass && pass.length >= 6) users[currentUser].passwordHash = hashPassword(pass);
+                if (pass && pass.length >= 6) {
+                    const oldPassword = prompt('Для смены пароля введите СТАРЫЙ пароль:');
+                    if (!oldPassword) { showToast('Смена пароля отменена', 'warning'); return; }
+                    const oldKey = deriveKey(oldPassword, currentUser);
+                    const testUsers = secureGetItemWithKey('bankUsers', oldKey);
+                    if (!testUsers || !testUsers[currentUser]) {
+                        showToast('Неверный старый пароль!', 'error');
+                        return;
+                    }
+                    const newKey = deriveKey(pass, currentUser);
+                    const encryptedDataKey = encryptDataKeyWithPassword(DATA_KEY, pass, currentUser);
+                    users[currentUser].passwordHash = hashPassword(pass);
+                    secureSetItem('bankUsers', users);
+                    MASTER_KEY = newKey;
+                    realSetItem(`dataKey_${currentUser}`, encryptedDataKey);
+                    secureSetItem('bankUsers', users);
+                    showToast('Пароль обновлён!', 'success');
+                }
                 secureSetItem('bankUsers', users);
                 UI.closeAllModals();
                 navigateTo('profile');
-                showToast('Профиль обновлён!', 'success');
+                if (!pass) showToast('Профиль обновлён!', 'success');
             }
 
             function uploadAvatar(e) {
@@ -3272,18 +3078,10 @@
                 reader.onload = (e) => {
                     try {
                         const backup = JSON.parse(e.target.result);
-                        if (!backup.data || !backup.data.user) {
-                            throw new Error('Неверный формат файла');
-                        }
-                        if (!users[currentUser]) {
-                            throw new Error('Текущий пользователь не найден в системе');
-                        }
+                        if (!backup.data || !backup.data.user) throw new Error('Неверный формат файла');
+                        if (!users[currentUser]) throw new Error('Текущий пользователь не найден в системе');
                         if (backup.username !== currentUser) {
-                            if (!confirm(
-                                    `Файл от пользователя ${backup.username}. Импортировать в текущий аккаунт ${currentUser}?`
-                                    )) {
-                                return;
-                            }
+                            if (!confirm(`Файл от пользователя ${backup.username}. Импортировать в текущий аккаунт ${currentUser}?`)) return;
                         }
                         users[currentUser] = { ...users[currentUser], ...backup.data.user };
                         delete users[currentUser].passwordHash;
@@ -3304,51 +3102,36 @@
                 };
                 reader.readAsDataURL(file);
             }
+
             async function completeRegistration() {
                 const errorEl = document.getElementById('registerError');
                 const captcha = document.getElementById('captchaInput').value.trim();
-                if (!captcha) {
-                    return showError(errorEl, 'Введите ответ');
-                }
-                if (parseInt(captcha) !== captchaAnswer) {
-                    return showError(errorEl, 'Неверный ответ');
-                }
+                if (!captcha) return showError(errorEl, 'Введите ответ');
+                if (parseInt(captcha) !== captchaAnswer) return showError(errorEl, 'Неверный ответ');
                 const { name, username, email, phone, password } = regData;
-                if (!isValidNickname(username)) {
-                    return showError(errorEl, 'Никнейм может содержать только буквы, цифры и _');
-                }
+                if (!isValidNickname(username)) return showError(errorEl, 'Никнейм может содержать только буквы, цифры и _');
                 const salt = getUserSalt(username);
-                MASTER_KEY = CryptoJS.PBKDF2(password, salt, {
-                    keySize: 256 / 32,
-                    iterations: 100000,
-                    hasher: CryptoJS.algo.SHA256
-                }).toString();
+                MASTER_KEY = CryptoJS.PBKDF2(password, salt, { keySize: 256 / 32, iterations: 100000, hasher: CryptoJS.algo.SHA256 }).toString();
                 const existingUsers = secureGetItem('bankUsers') || {};
-                if (existingUsers[username]) {
-                    MASTER_KEY = null;
-                    return showError(errorEl, 'Этот никнейм уже занят');
-                }
+                if (existingUsers[username]) { MASTER_KEY = null; return showError(errorEl, 'Этот никнейм уже занят'); }
+                DATA_KEY = CryptoJS.lib.WordArray.random(256 / 32).toString();
+                const encryptedDataKey = encryptDataKeyWithPassword(DATA_KEY, password, username);
                 users = existingUsers;
                 users[username] = {
-                    name,
-                    email,
-                    phone,
+                    name, email, phone,
                     passwordHash: hashPassword(password),
                     balance: 0,
                     registrationDate: new Date().toISOString(),
                     avatar: null
                 };
                 secureSetItem('bankUsers', users);
+                realSetItem(`dataKey_${username}`, encryptedDataKey);
                 currentUser = username;
                 bktokBalances[username] = 10;
                 frozenBalances[username] = 0;
                 saveUserSpecificData(username, 'balance', 10);
                 saveUserSpecificData(username, 'frozen', 0);
-                allSupportChats[username] = [{
-                    from: 'ai',
-                    text: '👋 Здравствуйте! Я нейросеть BK-Bank. Могу помочь с балансом, картами, токенами.',
-                    time: new Date().toISOString()
-                }];
+                allSupportChats[username] = [{ from: 'ai', text: '👋 Здравствуйте! Я нейросеть BK-Bank. Могу помочь с балансом, картами, токенами.', time: new Date().toISOString() }];
                 saveUserSpecificData(username, 'supportChats', allSupportChats[username]);
                 userTasks[username] = {};
                 saveUserSpecificData(username, 'tasks', {});
@@ -3373,56 +3156,18 @@
                 }
                 resetToGuestState();
             }
+
             loadUnencryptedData();
             window.addEventListener('beforeunload', () => {
-                if (currentUser && MASTER_KEY) {
-                    saveSession();
-                }
+                if (currentUser && MASTER_KEY) saveSession();
             });
             ['click', 'keydown', 'scroll', 'mousemove'].forEach(event => {
                 document.addEventListener(event, resetInactivityTimer, { passive: true });
             });
             window.onload = async () => {
-                if (realGetItem('theme') === 'light') {
-                    document.body.classList.add('light-theme');
-                }
+                if (realGetItem('theme') === 'light') document.body.classList.add('light-theme');
                 updateThemeIcon();
-                // Check for remembered session first
-                const rememberedSession = realGetItem('rememberedSession');
-                if (rememberedSession) {
-                    try {
-                        const rememberedData = JSON.parse(rememberedSession);
-                        const savedUsername = rememberedData.username;
-                        const encryptedPassword = rememberedData.encryptedPassword;
-                        // Decrypt password
-                        const password = CryptoJS.AES.decrypt(encryptedPassword, BASE_SALT).toString(CryptoJS.enc.Utf8);
-                        if (password) {
-                            // Auto-login with remembered credentials
-                            const tempKey = deriveKey(password, savedUsername);
-                            const decryptedUsers = secureGetItemWithKey('bankUsers', tempKey);
-                            if (decryptedUsers && decryptedUsers[savedUsername]) {
-                                const hashedPassword = hashPassword(password);
-                                if (constantTimeCompare(decryptedUsers[savedUsername].passwordHash, hashedPassword)) {
-                                    MASTER_KEY = tempKey;
-                                    users = decryptedUsers;
-                                    currentUser = savedUsername;
-                                    savedAccounts[savedUsername] = true;
-                                    realSetItem('savedAccounts', JSON.stringify(savedAccounts));
-                                    loadAllDataForCurrentUser();
-                                    saveSession();
-                                    showMainContent();
-                                    navigateTo('about');
-                                    resetInactivityTimer();
-                                    return;
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        realRemoveItem('rememberedSession');
-                    }
-                }
-                // Fallback to regular session
-                const savedSession = realGetItem('currentSession');
+                const savedSession = _sessionStorage.getItem('currentSession');
                 if (savedSession) {
                     try {
                         const sessionData = JSON.parse(savedSession);
@@ -3435,15 +3180,14 @@
                                 return;
                             }
                         }
-                    } catch (e) {
-                        realRemoveItem('currentSession');
-                    }
+                    } catch (e) { _sessionStorage.removeItem('currentSession'); }
                 }
                 document.querySelector('.main-container').classList.remove('hidden');
                 document.querySelector('header').classList.remove('hidden');
                 updateUIForAuth();
                 navigateTo('about');
             };
+
             window.toggleTheme = toggleTheme;
             window.navigateTo = navigateTo;
             window.openModal = openModal;
