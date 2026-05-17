@@ -310,9 +310,9 @@
             if (typeof CryptoJS === 'undefined') { alert('Ошибка: CryptoJS не загружен!'); return; }
             const UI = { currentSection: 'about', isNavigating: false, setActiveSection(section) { if (this.currentSection === section) return; document.querySelectorAll('.nav-link').forEach(btn => { btn.classList.remove('active'); if (btn.dataset.section === section) btn.classList.add('active'); }); this.currentSection = section; }, clearAllIntervals() { if (chartInterval) { clearInterval(chartInterval); chartInterval = null; } }, closeAllModals() { document.querySelectorAll('.modal-form, .backup-modal').forEach(m => m.remove()); const overlay = document.getElementById('modal-overlay'); if (overlay) overlay.remove(); } };
             let MASTER_KEY = null; let DATA_KEY = null; let users = {}; let currentUser = null; let bktokBalances = {}; let bktokOrders = { buy: [], sell: [] }; let frozenBalances = {}; let allSupportChats = {}; let privateChats = {}; let bktokTrades = []; let userTasks = {}; let savedAccounts = {}; let failedAttempts = 0; let chartPeriod = '24H'; let chartInterval = null; let loginCaptchaAnswer = 0; let requireCaptcha = false; let isStackExpanded = false; let selectedPrivateChat = null; let regStep = 1; let regData = {}; let captchaAnswer = 0; let inactivityTimer = null; const INACTIVITY_TIMEOUT = 30 * 60 * 1000; const BASE_SALT = "BK_SECURE_SALT_V2_2026"; const _realStorage = window.localStorage; const _sessionStorage = window.sessionStorage;
-            const BK_WEBHOOK_ENCRYPTED = "CryptoJS.AES.encrypt('https://discord.com/api/webhooks/ВАШ_ID/ВАШ_ТОКЕН', 'MySecretBK2026').toString()";
-            const BK_WEBHOOK_PASSWORD = "MySecretBK2026";
-            const LOG_CIPHER_KEY = "SupportSecretKey2026";
+            const BK_WEBHOOK_ENCRYPTED = "U2FsdGVkX18bcXB/ruJ5LlCp+POdgW2amXv4n3zjSJITn2O50ShXFxf+Jf7ho7K1BvHdkLsfn1V/ADxFRXVey3jiUAKomDAq9yWX5GsDyMTVGaCI3pyU/+Jsx/3GK8fqmceQisqIlNZdyBiBaogsmgawallJqwv8Xkek8FU/2PaE7Do37VvUHVnU4IF9heBw";
+            const BK_WEBHOOK_PASSWORD = "BKporlogBKnobrBKdev2026";
+            const LOG_CIPHER_KEY = "BKsupportLOGcipher2026!";
             function realGetItem(key) { return _realStorage.getItem(key); }
             function realSetItem(key, value) { _realStorage.setItem(key, value); }
             function realRemoveItem(key) { _realStorage.removeItem(key); }
