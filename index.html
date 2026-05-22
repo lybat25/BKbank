@@ -127,16 +127,16 @@
             function proxyFetch(url, options) {
                 options = options || {};
                 var proxies = [
-                    "https://yacdn.org/proxy/" + encodeURIComponent(url),
-                    "https://corsproxy.io/?url=" + encodeURIComponent(url),
-                    "https://api.allorigins.win/raw?url=" + encodeURIComponent(url),
-                    "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(url)
+                    "https://corsproxy.io/?url=",
+                    "https://yacdn.org/proxy/",
+                    "https://api.allorigins.win/raw?url=",
+                    "https://api.codetabs.com/v1/proxy?quest="
                 ];
                 function tryProxy(index) {
                     if (index >= proxies.length) {
                         return Promise.reject(new Error('Все прокси не отвечают'));
                     }
-                    return fetch(proxies[index])
+                    return fetch(proxies[index] + encodeURIComponent(url))
                         .then(function(r) { return r.json(); })
                         .then(function(data) {
                             if (data.error) throw new Error(data.error);
